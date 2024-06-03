@@ -11,7 +11,6 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  * GitHub Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * GitHub Branch: main
- * Requires at least: 6.4
  * Requires PHP: 7.4
  *
  * @package Advanced Custom Fields: SVG Icon Picker
