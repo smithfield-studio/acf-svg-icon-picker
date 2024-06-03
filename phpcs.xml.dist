@@ -11,7 +11,7 @@
 	<arg name="basepath" value="." />
 
 	<!-- Set a minimum PHP version for PHPCompatibility -->
-	<config name="testVersion" value="8.0-" />
+	<config name="testVersion" value="7.4-" />
 
    <!-- Use 10up's phpcs ruleset -->
 	<rule ref="10up-Default">
