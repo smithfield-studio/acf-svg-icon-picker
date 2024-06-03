@@ -17,22 +17,41 @@ if (!defined('ABSPATH')) {
 }
 
 if (!class_exists('acf_plugin_svg_icon_picker')) {
-    class acf_plugin_svg_icon_picker {
+    /** 
+     * Plugin class.
+     */
+    class acf_plugin_svg_icon_picker
+    {
 
-        public $settings = array();
+        public static $settings = array();
 
-        public function __construct() {
-            $this->settings = array(
+        /**
+         * Constructor.
+         */
+        public function __construct()
+        {
+            self::$settings = array(
                 'version' => '3.0.0',
-                'url' => plugin_dir_url(__FILE__),
-                'path' => plugin_dir_path(__FILE__),
+                'url'     => plugin_dir_url(__FILE__),
+                'path'    => plugin_dir_path(__FILE__),
             );
 
-            add_action('acf/include_field_types', array($this, 'include_field_types'));
+            add_action('init', array($this, 'include_field_types'));
         }
 
-        public function include_field_types($version = false) {
-            include_once 'fields/acf-svg-icon-picker-v5.php';
+        /**
+         * Include SVG Icon Picker field type.
+         *
+         * @param bool $version
+         */
+        public function include_field_types()
+        {
+            if (!function_exists('acf_register_field_type')) {
+                return;
+            }
+
+            require_once __DIR__ . '/class-acf-svg-icon-picker-v5.php';
+            acf_register_field_type('acf_field_svg_icon_picker');
         }
     }
 }
