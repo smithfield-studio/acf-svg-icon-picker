@@ -3,30 +3,24 @@
 	<!-- Files or directories to check -->
 	<file>.</file>
 
-	<exclude-pattern>*/node_modules/*</exclude-pattern>
    <exclude-pattern>*/wordpress/*</exclude-pattern>
 	<exclude-pattern>*/vendor/*</exclude-pattern>
-   <exclude-pattern>*/resources/*</exclude-pattern>
-	<exclude-pattern>*/dist/*</exclude-pattern>
 	<exclude-pattern>*/tests/*</exclude-pattern>
 
 	<!-- Path to strip from the front of file paths inside reports (displays shorter paths) -->
 	<arg name="basepath" value="." />
 
 	<!-- Set a minimum PHP version for PHPCompatibility -->
-	<config name="testVersion" value="8.1-" />
+	<config name="testVersion" value="8.0-" />
 
-	<rule ref="10up-Default" />
-	<rule ref="WordPress-Core" />
-	<rule ref="WordPress-Docs" />
-	<rule ref="WordPress-Extra" />
-	<!-- Add VIP-specific rules -->
-	<config name="minimum_supported_wp_version" value="6.1"/>
+   <!-- Use 10up's phpcs ruleset -->
+	<rule ref="10up-Default">
+	</rule>
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array" value="acf-svg-icon-picker"/>
 		</properties>
 	</rule>
-
+	
 </ruleset>

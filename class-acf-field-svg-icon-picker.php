@@ -1,12 +1,20 @@
 <?php
+/**
+ * Field class for the SVG Icon Picker field.
+ *
+ * @package Advanced Custom Fields: SVG Icon Picker
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
-	class acf_field_svg_icon_picker extends \acf_field {
+if ( ! class_exists( 'ACF_Field_Svg_Icon_Picker' ) ) {
 
+	/**
+	 * Field class for the SVG Icon Picker field.
+	 */
+	class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
 		/**
 		 * Controls field type visibility in REST requests.
@@ -68,7 +76,7 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 
 			$files = array_diff( scandir( $this->path ), array( '.', '..' ) );
 			foreach ( $files as $file ) {
-				if ( pathinfo( $file, PATHINFO_EXTENSION ) == 'svg' ) {
+				if ( pathinfo( $file, PATHINFO_EXTENSION ) === 'svg' ) {
 					$name     = explode( '.', $file )[0];
 					$filename = pathinfo( $file, PATHINFO_FILENAME );
 					$icon     = array(
@@ -86,11 +94,11 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 		/**
 		 * Method that renders the field in the admin.
 		 *
-		 * @param array $field
+		 * @param array $field The field array.
 		 * @return void
 		 */
 		public function render_field( $field ) {
-			$input_icon = $field['value'] != '' ? $field['value'] : $field['initial_value'];
+			$input_icon = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
 			$svg        = $this->path . $input_icon . '.svg';
 			?>
 			<div class="acf-svg-icon-picker">
@@ -99,7 +107,7 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 					if ( file_exists( $svg ) ) {
 						$svg = $this->url . $input_icon . '.svg';
 						echo '<div class="acf-svg-icon-picker__svg">';
-						echo '<img src="' . $svg . '" alt=""/>';
+						echo '<img src="' . esc_url( $svg ) . '" alt=""/>';
 						echo '</div>';
 					} else {
 						echo '<div class="acf-svg-icon-picker__svg">';
@@ -109,9 +117,9 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 					?>
 					<input type="hidden" readonly name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( $input_icon ); ?>" />
 				</div>
-				<?php if ( $field['required'] == false ) { ?>
+				<?php if ( false === $field['required'] ) { ?>
 					<span class="acf-svg-icon-picker__remove">
-						<?php _e( 'remove', 'acf-svg-icon-picker' ); ?>
+						<?php esc_html_e( 'remove', 'acf-svg-icon-picker' ); ?>
 					</span>
 				<?php } ?>
 			</div>
@@ -127,7 +135,7 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 			$url     = acf_plugin_svg_icon_picker::$settings['url'];
 			$version = acf_plugin_svg_icon_picker::$settings['version'];
 
-			wp_register_script( 'acf-input-svg-icon-picker', "{$url}assets/js/input.js", array( 'acf-input' ), $version );
+			wp_register_script( 'acf-input-svg-icon-picker', "{$url}assets/js/input.js", array( 'acf-input' ), $version, true );
 			wp_enqueue_script( 'acf-input-svg-icon-picker' );
 
 			wp_localize_script(
@@ -136,6 +144,7 @@ if ( ! class_exists( 'acf_field_svg_icon_picker' ) ) {
 				array(
 					'path'         => $this->url,
 					'svgs'         => $this->svgs,
+					/* translators: %s: path_suffix */
 					'no_icons_msg' => sprintf( esc_html__( 'To add icons, add your svg files in the /%s folder in your theme.', 'acf-svg-icon-picker' ), $this->path_suffix ),
 				)
 			);
