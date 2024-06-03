@@ -12,48 +12,46 @@ GitHub Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
 GitHub Branch: main
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-if (!class_exists('acf_plugin_svg_icon_picker')) {
-    /** 
-     * Plugin class.
-     */
-    class acf_plugin_svg_icon_picker
-    {
+if ( ! class_exists( 'acf_plugin_svg_icon_picker' ) ) {
+	/**
+	 * Plugin class.
+	 */
+	class acf_plugin_svg_icon_picker {
 
-        public static $settings = array();
 
-        /**
-         * Constructor.
-         */
-        public function __construct()
-        {
-            self::$settings = array(
-                'version' => '3.0.0',
-                'url'     => plugin_dir_url(__FILE__),
-                'path'    => plugin_dir_path(__FILE__),
-            );
+		public static $settings = array();
 
-            add_action('init', array($this, 'include_field_types'));
-        }
+		/**
+		 * Constructor.
+		 */
+		public function __construct() {
+			self::$settings = array(
+				'version' => '3.0.0',
+				'url'     => plugin_dir_url( __FILE__ ),
+				'path'    => plugin_dir_path( __FILE__ ),
+			);
 
-        /**
-         * Include SVG Icon Picker field type.
-         *
-         * @param bool $version
-         */
-        public function include_field_types()
-        {
-            if (!function_exists('acf_register_field_type')) {
-                return;
-            }
+			add_action( 'init', array( $this, 'include_field_types' ) );
+		}
 
-            require_once __DIR__ . '/class-acf-svg-icon-picker-v5.php';
-            acf_register_field_type('acf_field_svg_icon_picker');
-        }
-    }
+		/**
+		 * Include SVG Icon Picker field type.
+		 *
+		 * @param bool $version
+		 */
+		public function include_field_types() {
+			if ( ! function_exists( 'acf_register_field_type' ) ) {
+				return;
+			}
+
+			require_once __DIR__ . '/class-acf-svg-icon-picker-v5.php';
+			acf_register_field_type( 'acf_field_svg_icon_picker' );
+		}
+	}
 }
 
 new acf_plugin_svg_icon_picker();
