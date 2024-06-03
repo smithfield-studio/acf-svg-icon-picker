@@ -1,16 +1,6 @@
 # ACF SVG Icon Picker Field
 
-Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker), updated to work with ACF 6.3+
-
----
-
-Allows you to create an 'svg-icon-picker' acf-field.
-
----
-
-## Please note
-
-I am no longer developing this plugin myself, but will still be accepting PRs.
+Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker) (which is no longer in active dev), updated to work with ACF v6.3 and above.
 
 ## Description
 
@@ -25,17 +15,17 @@ This ACF field type is compatible with:
 
 ## Screenshots
 
-![Icon Picker](https://raw.githubusercontent.com/houke/acf-icon-picker/master/screenshots/example.png)
+![SVG Icon Picker](/screenshots/example.png)
 
 ## Installation
 
 ### via Composer
-1. Add a line to your repositories array: `{ "type": "git", "url": "https://github.com/houke/acf-icon-picker" }`
-2. Add a line to your require block: `"houke/acf-icon-picker": "dev-master"`
+1. Add a line to your repositories array: `{ "type": "git", "url": "https://github.com/smithfield-stuido/acf-svg-icon-picker" }`
+2. Add a line to your require block: `"smithfield-stuido/acf-svg-icon-picker": "3.0.0"` or `"smithfield-studio/acf-svg-icon-picker": "dev-main"` for the latest development version
 3. Run: `composer update`
 
 ### Manually
-1. Copy the `acf-icon-picker` folder into your `wp-content/plugins` folder
+1. Copy the `acf-svg-icon-picker` folder into your `wp-content/plugins` folder
 2. Activate the Icon Selector plugin via the plugins admin page
 3. Create a new field via ACF and select the Icon Selector type
 
@@ -45,28 +35,28 @@ Use the below filters to override the default icon folder, path, and / or URL:
 
 ```php
 // modify the path to the icons directory
-add_filter( 'acf_icon_path_suffix', 'acf_icon_path_suffix' );
+add_filter('acf_icon_path_suffix', 'acf_icon_path_suffix');
 
-function acf_icon_path_suffix( $path_suffix ) {
+function acf_icon_path_suffix($path_suffix) {
     return 'assets/img/icons/';
 }
 
 // modify the path to the above prefix
-add_filter( 'acf_icon_path', 'acf_icon_path' );
+add_filter('acf_icon_path', 'acf_icon_path');
 
-function acf_icon_path( $path_suffix ) {
-    return plugin_dir_path( __FILE__ );
+function acf_icon_path($path_suffix) {
+    return plugin_dir_path(__FILE__);
 }
 
 // modify the URL to the icons directory to display on the page
-add_filter( 'acf_icon_url', 'acf_icon_url' );
+add_filter('acf_icon_url', 'acf_icon_url');
 
-function acf_icon_url( $path_suffix ) {
+function acf_icon_url($path_suffix) {
     return plugin_dir_url( __FILE__ );
 }
 ```
 
-For Sage/Bedrock edit filters.php:
+### For Sage/Bedrock edit filters.php:
 
 ```php
 /// modify the path to the icons directory
@@ -91,8 +81,18 @@ add_filter('acf_icon_url',
 );
 ```
 
+## Using with [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
+
+```php
+$fields->addField('my_icon', 'svg-icon-picker', [
+    'label' => 'My Icon',
+])
+```
+
+
 ## Changelog
 
+* 3.0.0 - Revert to original ACF field name, quick tidy + README updates
 * 2.0.0 - Fix for ACF 6.3 which now has an official icon-picker field + merged open PRs from [Levdbas](https://github.com/houke/acf-icon-picker/pull/38) & [phschmanau](https://github.com/houke/acf-icon-picker/pull/37)
 * 1.9.1 - ACF 6 compatibility fix. Thanks to [idflood](https://github.com/houke/acf-icon-picker/pull/30)
 * 1.9.0 - Fix issue with Gutenberg preview not updating when removing. Thanks to [cherbst](https://github.com/houke/acf-icon-picker/pull/23)
