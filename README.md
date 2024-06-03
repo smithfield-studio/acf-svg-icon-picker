@@ -89,7 +89,6 @@ $fields->addField('my_icon', 'svg-icon-picker', [
 ])
 ```
 
-
 ## Changelog
 
 * 3.0.0 - Revert to original ACF field name, quick tidy + README updates
