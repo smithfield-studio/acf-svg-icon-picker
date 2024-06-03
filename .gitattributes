@@ -4,3 +4,5 @@
 /.gitignore export-ignore
 /tests export-ignore
 /screenshots export-ignore
+/.github export-ignore
+/phpcs.xml.dist export-ignore
