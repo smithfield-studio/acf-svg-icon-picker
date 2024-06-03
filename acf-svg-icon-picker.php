@@ -26,7 +26,7 @@ class acf_plugin_svg_icon_picker {
 
     public function __construct() {
         $this->settings = array(
-            'version' => '2.0.0',
+            'version' => '3.0.0',
             'url' => plugin_dir_url(__FILE__),
             'path' => plugin_dir_path(__FILE__),
         );
