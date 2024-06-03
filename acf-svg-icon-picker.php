@@ -10,34 +10,33 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 GitHub Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
 GitHub Branch: main
-*/
+ */
 
-if( ! defined( 'ABSPATH' ) ) exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-if( !class_exists('acf_plugin_svg_icon_picker') ) :
+if (class_exists('acf_plugin_svg_icon_picker')) {
+    return;
+}
 
 class acf_plugin_svg_icon_picker {
 
-	public $settings = array();
+    public $settings = array();
 
-	function __construct() {
+    public function __construct() {
+        $this->settings = array(
+            'version' => '2.0.0',
+            'url' => plugin_dir_url(__FILE__),
+            'path' => plugin_dir_path(__FILE__),
+        );
 
-		$this->settings = array(
-			'version'	=> '2.0.0',
-			'url'		=> plugin_dir_url( __FILE__ ),
-			'path'		=> plugin_dir_path( __FILE__ )
-		);
+        add_action('acf/include_field_types', array($this, 'include_field_types'));
+    }
 
-		add_action('acf/include_field_types', 	array($this, 'include_field_types'));
-
-	}
-
-	function include_field_types( $version = false ) {
-		include_once('fields/acf-svg-icon-picker-v5.php');
-	}
-
+    public function include_field_types($version = false) {
+        include_once 'fields/acf-svg-icon-picker-v5.php';
+    }
 }
 
 new acf_plugin_svg_icon_picker();
-
-endif;
