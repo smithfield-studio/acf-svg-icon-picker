@@ -84,7 +84,7 @@ add_filter('acf_icon_url',
 ## Using with [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
 ```php
-$fields->addField('my_icon', 'svg-icon-picker', [
+$fields->addField('my_icon', 'icon-picker', [
     'label' => 'My Icon',
 ])
 ```
