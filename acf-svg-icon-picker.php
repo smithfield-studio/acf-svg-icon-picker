@@ -21,7 +21,7 @@ namespace SmithfieldStudio\AcfSvgIconPicker;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Change this version number and the version in the 
+ * Change this version number and the version in the
  * docblock above when releasing a new version of this plugin.
  */
 define( 'ACF_SVG_ICON_PICKER_VERSION', '3.0.0' );
@@ -41,4 +41,4 @@ function include_field_types() {
 	acf_register_field_type( 'SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker' );
 }
 
-add_action( 'init', __NAMESPACE__ .'\\include_field_types' );
+add_action( 'init', __NAMESPACE__ . '\\include_field_types' );
