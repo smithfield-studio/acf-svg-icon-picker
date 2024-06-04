@@ -4,6 +4,7 @@
  *
  * @package Advanced Custom Fields: SVG Icon Picker
  */
+namespace SmithfieldStudio\AcfSvgIconPicker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -64,8 +65,8 @@ if ( ! class_exists( 'ACF_Field_Svg_Icon_Picker' ) ) {
 			$this->defaults    = array( 'initial_value' => '' );
 			$this->l10n        = array( 'error' => __( 'Error!', 'acf-svg-icon-picker' ) );
 			$this->path_suffix = apply_filters( 'acf_icon_path_suffix', 'assets/img/acf/' );
-			$this->path        = apply_filters( 'acf_icon_path', acf_plugin_svg_icon_picker::$settings['path'] ) . $this->path_suffix;
-			$this->url         = apply_filters( 'acf_icon_url', acf_plugin_svg_icon_picker::$settings['url'] ) . $this->path_suffix;
+			$this->path        = apply_filters( 'acf_icon_path', ACF_SVG_ICON_PICKER_PATH ) . $this->path_suffix;
+			$this->url         = apply_filters( 'acf_icon_url', ACF_SVG_ICON_PICKER_URL ) . $this->path_suffix;
 
 			$priority_dir_lookup = get_stylesheet_directory() . '/' . $this->path_suffix;
 
@@ -130,10 +131,9 @@ if ( ! class_exists( 'ACF_Field_Svg_Icon_Picker' ) ) {
 		 * @return void
 		 */
 		public function input_admin_enqueue_scripts() {
-			$url     = acf_plugin_svg_icon_picker::$settings['url'];
-			$version = acf_plugin_svg_icon_picker::$settings['version'];
+			$url     = ACF_SVG_ICON_PICKER_URL;
 
-			wp_register_script( 'acf-input-svg-icon-picker', "{$url}assets/js/input.js", array( 'acf-input' ), $version, true );
+			wp_register_script( 'acf-input-svg-icon-picker', "{$url}assets/js/input.js", array( 'acf-input' ), ACF_SVG_ICON_PICKER_VERSION, true );
 			wp_enqueue_script( 'acf-input-svg-icon-picker' );
 
 			wp_localize_script(
@@ -147,7 +147,7 @@ if ( ! class_exists( 'ACF_Field_Svg_Icon_Picker' ) ) {
 				)
 			);
 
-			wp_register_style( 'acf-input-svg-icon-picker', "{$url}assets/css/input.css", array( 'acf-input' ), $version );
+			wp_register_style( 'acf-input-svg-icon-picker', "{$url}assets/css/input.css", array( 'acf-input' ), ACF_SVG_ICON_PICKER_VERSION );
 			wp_enqueue_style( 'acf-input-svg-icon-picker' );
 		}
 	}

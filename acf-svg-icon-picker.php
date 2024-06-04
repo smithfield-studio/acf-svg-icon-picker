@@ -16,48 +16,29 @@
  * @package Advanced Custom Fields: SVG Icon Picker
  **/
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+namespace SmithfieldStudio\AcfSvgIconPicker;
 
-if ( ! class_exists( 'Acf_Plugin_Svg_Icon_Picker' ) ) {
-	/**
-	 * Plugin class.
-	 */
-	class Acf_Plugin_Svg_Icon_Picker {
+defined( 'ABSPATH' ) || exit;
 
-		/**
-		 * Plugin settings.
-		 *
-		 * @var array
-		 */
-		public static $settings = array();
+/**
+ * Change this version number and the version in the 
+ * docblock above when releasing a new version of this plugin.
+ */
+define( 'ACF_SVG_ICON_PICKER_VERSION', '3.0.0' );
 
-		/**
-		 * Constructor.
-		 */
-		public function __construct() {
-			self::$settings = array(
-				'version' => '3.0.0',
-				'url'     => plugin_dir_url( __FILE__ ),
-				'path'    => plugin_dir_path( __FILE__ ),
-			);
+define( 'ACF_SVG_ICON_PICKER_URL', plugin_dir_url( __FILE__ ) );
+define( 'ACF_SVG_ICON_PICKER_PATH', plugin_dir_path( __FILE__ ) );
 
-			add_action( 'init', array( $this, 'include_field_types' ) );
-		}
-
-		/**
-		 * Include SVG Icon Picker field type.
-		 */
-		public function include_field_types() {
-			if ( ! function_exists( 'acf_register_field_type' ) ) {
-				return;
-			}
-
-			require_once __DIR__ . '/class-acf-field-svg-icon-picker.php';
-			acf_register_field_type( 'ACF_Field_Svg_Icon_Picker' );
-		}
+/**
+ * Include SVG Icon Picker field type.
+ */
+function include_field_types() {
+	if ( ! function_exists( 'acf_register_field_type' ) ) {
+		return;
 	}
+
+	require_once __DIR__ . '/class-acf-field-svg-icon-picker.php';
+	acf_register_field_type( 'SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker' );
 }
 
-new Acf_Plugin_Svg_Icon_Picker();
+add_action( 'init', __NAMESPACE__ .'\\include_field_types' );
