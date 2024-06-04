@@ -100,27 +100,25 @@ if ( ! class_exists( 'ACF_Field_Svg_Icon_Picker' ) ) {
 		public function render_field( $field ) {
 			$input_icon = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
 			$svg        = $this->path . $input_icon . '.svg';
+			$svg_exists = file_exists( $svg );
+			$svg_url    = esc_url( $this->url . $input_icon . '.svg' );
+
 			?>
 			<div class="acf-svg-icon-picker">
 				<div class="acf-svg-icon-picker__img">
-					<?php
-					if ( file_exists( $svg ) ) {
-						$svg = $this->url . $input_icon . '.svg';
-						echo '<div class="acf-svg-icon-picker__svg">';
-						echo '<img src="' . esc_url( $svg ) . '" alt=""/>';
-						echo '</div>';
-					} else {
-						echo '<div class="acf-svg-icon-picker__svg">';
-						echo '<span class="acf-svg-icon-picker__svg--span">&plus;</span>';
-						echo '</div>';
-					}
-					?>
-					<input type="hidden" readonly name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( $input_icon ); ?>" />
+						<div class="acf-svg-icon-picker__svg">
+							<?php
+							echo $svg_exists
+								? '<img src="' . esc_url( $svg_url ) . '" alt=""/>'
+								: '<span class="acf-svg-icon-picker__svg--span">&plus;</span>';
+							?>
+						</div>
+						<input type="hidden" readonly name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( $input_icon ); ?>" />
 				</div>
-				<?php if ( false === $field['required'] ) { ?>
-					<span class="acf-svg-icon-picker__remove">
-						<?php esc_html_e( 'remove', 'acf-svg-icon-picker' ); ?>
-					</span>
+				<?php if ( ! $field['required'] ) { ?>
+						<span class="acf-svg-icon-picker__remove">
+							<?php esc_html_e( 'remove', 'acf-svg-icon-picker' ); ?>
+						</span>
 				<?php } ?>
 			</div>
 			<?php
