@@ -42,7 +42,7 @@
         <div class="acf-svg-icon-picker__popup">
         <a class="acf-svg-icon-picker__popup__close" href="javascript:">close</a>
         <h4 class="acf-svg-icon-picker__popup__title">ACF Icon Picker - Choose icon</h4>
-        <input class="acf-svg-icon-picker__filter" type="text" id="filterIcons" placeholder="Start typing to filter icons" />
+        <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="Start typing to filter icons" />
           ${list}
         </div>
       </div>`
