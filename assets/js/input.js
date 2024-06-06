@@ -42,7 +42,7 @@
         <div class="acf-svg-icon-picker__popup">
         <a class="acf-svg-icon-picker__popup__close" href="javascript:">close</a>
         <h4 class="acf-svg-icon-picker__popup__title">ACF Icon Picker - Choose icon</h4>
-        <input class="acf-svg-icon-picker__filter" type="text" id="filterIcons" placeholder="Start typing to filter icons" />
+        <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="Start typing to filter icons" />
           ${list}
         </div>
       </div>`
@@ -161,9 +161,17 @@
         setListHeight();
       }
 
+      function debounce(func, wait) {
+        var timeout;
+        return function (...args) {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      }
+
       iconsFilter.focus();
 
-      iconsFilter.addEventListener('keyup', displayResults);
+      iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
 
       // Closing
       jQuery('.acf-svg-icon-picker__popup__close').on('click', function (e) {
