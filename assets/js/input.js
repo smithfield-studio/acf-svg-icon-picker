@@ -30,6 +30,9 @@
       var is_open = true;
       active_item = $(this);
 
+      // Remove any existing popups to prevent duplicates
+      jQuery(".acf-svg-icon-picker__popup-holder").remove();
+
       if (acfSvgIconPicker.svgs.length == 0) {
         var list = '<p>' + acfSvgIconPicker.no_icons_msg + '</p>';
       } else {
@@ -212,4 +215,24 @@
       });
     });
   }
+
+  // Use MutationObserver to detect changes in the DOM
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        $(mutation.addedNodes)
+          .find(".acf-svg-icon-picker")
+          .each(function () {
+            console.log("MutationObserver: Initializing field:", $(this));
+            initialize_field($(this));
+          });
+      }
+    });
+  });
+
+  // Start observing the document body for changes
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 })(jQuery);
