@@ -223,7 +223,6 @@
         $(mutation.addedNodes)
           .find(".acf-svg-icon-picker")
           .each(function () {
-            console.log("MutationObserver: Initializing field:", $(this));
             initialize_field($(this));
           });
       }
