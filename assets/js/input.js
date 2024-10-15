@@ -151,9 +151,10 @@
       const iconsFilter = document.querySelector('#filterIcons');
 
       function filterIcons(wordToMatch) {
+        const normalizedWord = wordToMatch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         return acfSvgIconPicker.svgs.filter(icon => {
-          var name = icon.name.replace(/[-_]/g, ' ');
-          const regex = new RegExp(wordToMatch, 'gi');
+          var name = icon.name.replace(/[-_]/g, ' ').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const regex = new RegExp(normalizedWord, 'gi');
           return name.match(regex);
         });
       }
