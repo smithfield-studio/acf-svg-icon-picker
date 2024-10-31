@@ -4,8 +4,8 @@
  * Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * Description: Allows you to pick an icon from a predefined list
  * Version: 3.0.0
- * Author: Houke de Kwant
- * Author URI: https://github.com/houke/
+ * Author: Smithfield
+ * Author URI: https://github.com/smithfield-studio/acf-svg-icon-picker/
  * Text Domain: acf-svg-icon-picker
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
