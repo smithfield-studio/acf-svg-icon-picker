@@ -90,9 +90,9 @@
 	position: fixed;
 	z-index: 99999;
 	inset: 0;
-  display: grid;
+	display: grid;
 	background-color: rgba(0, 0, 0, 0.8);
-  place-items: center;
+	place-items: center;
 }
 
 .acf-svg-icon-picker__svg--span {
