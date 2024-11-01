@@ -14,7 +14,7 @@ This ACF field type is compatible with:
 
 ## Screenshots
 
-![SVG Icon Picker](/screenshots/example.png)
+![SVG Icon Picker Popup](/screenshots/example-popup.jpg)
 
 ## Installation
 
