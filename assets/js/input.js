@@ -8,7 +8,6 @@
       active_item = $(this);
 
       if (isOpen) {
-        console.log('Popup is already open');
         return;
       }
 
