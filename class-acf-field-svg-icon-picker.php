@@ -108,20 +108,16 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
 		?>
 			<div class="acf-svg-icon-picker">
-				<div class="acf-svg-icon-picker__img">
-						<div class="acf-svg-icon-picker__svg">
-						<?php
-						echo $svg_exists
-							? '<img src="' . esc_url( $svg_url ) . '" alt=""/>'
-							: '<span class="acf-svg-icon-picker__svg--span">&plus;</span>';
-						?>
-						</div>
-						<input type="hidden" readonly name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( $input_icon ); ?>" />
+				<div class="acf-svg-icon-picker__selector">
+                    <div class="acf-svg-icon-picker__icon">
+                        <?php echo $svg_exists ? '<img src="' . esc_url( $svg_url ) . '" alt=""/>' : '<span>&plus;</span>'; ?>
+                    </div>
+                    <input type="hidden" readonly name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( $input_icon ); ?>" />
 				</div>
 				<?php if ( ! $field['required'] ) { ?>
-						<span class="acf-svg-icon-picker__remove">
-							<?php esc_html_e( 'remove', 'acf-svg-icon-picker' ); ?>
-						</span>
+                    <button class="acf-svg-icon-picker__remove">
+                        <?php esc_html_e( 'Remove', 'acf-svg-icon-picker' ); ?>
+                    </button>
 				<?php } ?>
 			</div>
 			<?php
@@ -141,10 +137,16 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 			'acf-input-svg-icon-picker',
 			'acfSvgIconPicker',
 			array(
-				'path'         => $this->url,
-				'svgs'         => $this->svgs,
-				/* translators: %s: path_suffix */
-				'no_icons_msg' => sprintf( esc_html__( 'To add icons, add your svg files in the /%s folder in your theme.', 'acf-svg-icon-picker' ), $this->path_suffix ),
+				'path'      => $this->url,
+				'svgs'      => $this->svgs,
+                'columns'   => 4,
+                'msgs'      => array(
+                    'title'     => esc_html__( 'Select an icon', 'acf-svg-icon-picker' ),
+                    'close'     => esc_html__( 'close', 'acf-svg-icon-picker' ),
+                    'filter'     => esc_html__( 'Start typing to filter icons', 'acf-svg-icon-picker' ),
+                    /* translators: %s: path_suffix */
+                    'no_icons'  => sprintf( esc_html__( 'To add icons, add your svg files in the /%s folder in your theme.', 'acf-svg-icon-picker' ), $this->path_suffix ),
+                ),
 			)
 		);
 
