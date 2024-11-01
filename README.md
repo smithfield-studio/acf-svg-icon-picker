@@ -3,7 +3,7 @@
 
 # ACF SVG Icon Picker Field
 
-Add an easy to use ACF field to your theme that allows users to select SVG icons from a folder in your theme. The field returns the name of the SVG.
+Add an ACF field to your theme that lets users easily select SVG icons from a specified folder. The field returns the SVG's name.
 
 ## Compatibility
 
