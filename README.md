@@ -3,11 +3,7 @@
 
 # ACF SVG Icon Picker Field
 
-Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker) (which is no longer in active dev), updated to work with ACF v6.3 and above.
-
-## Description
-
-Add the svg icons you want to be available in your theme to an acf folder inside an img folder in your theme. The field returns the name of the svg.
+Add an easy to use ACF field to your theme that allows users to select SVG icons from a folder in your theme. The field returns the name of the SVG.
 
 ## Compatibility
 
@@ -27,10 +23,10 @@ Run `composer require smithfield-studio/acf-svg-icon-picker` and activate the pl
 
 ### Manually
 1. Copy the `acf-svg-icon-picker` folder into your `wp-content/plugins` folder
-2. Activate the Icon Selector plugin via the plugins admin page
-3. Create a new field via ACF and select the Icon Selector type
+2. Activate the plugin
+3. Create a new ACF field and select the SVG Icon Picker type
 
-## Switch from ACF Icon Picker to ACF SVG Icon Picker
+## Switch from the legacy 'ACF Icon Picker' to 'ACF SVG Icon Picker'
 If you're coming from the original ACF Icon Picker plugin, you can switch to this plugin by following these steps:
 
 1. Deactivate the old *ACF Icon Picker plugin*
@@ -98,6 +94,9 @@ $fields->addField('my_icon', 'svg_icon_picker', [
     'label' => 'My Icon',
 ])
 ```
+
+## Originally Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker)
+Updated to work with ACF v6.3 and above.
 
 ## Changelog
 
