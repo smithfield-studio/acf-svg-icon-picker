@@ -26,6 +26,7 @@
 .acf-svg-icon-picker__icon {
   padding: 15px;
   width: 100%;
+  text-align: center;
 }
 
 .acf-svg-icon-picker__icon img {
