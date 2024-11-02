@@ -125,6 +125,7 @@
 
 .acf-svg-icon-picker__popup ul li img {
   max-height: 50px;
+  max-width: 100%;
 }
 
 .acf-svg-icon-picker__popup ul li span {
