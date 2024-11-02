@@ -153,7 +153,7 @@
     active_item.find('.acf-svg-icon-picker__icon').html(`<img src="${src}" alt=""/>`);
     jQuery('.acf-svg-icon-picker__popup-overlay').trigger('close');
     jQuery('.acf-svg-icon-picker__popup-overlay').remove();
-    jQuery('.acf-svg-icon-picker__img input').trigger('change');
+    jQuery('.acf-svg-icon-picker__selector input').trigger('change');
 
     active_item
       .parents('.acf-svg-icon-picker')
