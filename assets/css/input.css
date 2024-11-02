@@ -57,6 +57,7 @@
 /* Popup */
 .acf-svg-icon-picker__popup * {
   box-sizing: border-box;
+  margin: 0;
 }
 
 .acf-svg-icon-picker__popup-overlay {
@@ -95,12 +96,15 @@
 }
 
 .acf-svg-icon-picker__popup-close {
+  padding: 0;
+  border: none;
+  background-color: transparent;
 }
 
 .acf-svg-icon-picker__popup ul {
   display: grid;
   position: relative;
-  grid-template-columns: repeat(var(--acfsip-columns, 4), 1fr);
+  grid-template-columns: repeat(var(--acfsip-columns, 4), calc(25% - var(--acfsip-spacing)));
   gap: var(--acfsip-spacing);
   padding: 20px;
 }
@@ -129,6 +133,7 @@
   color: #222;
   font-size: 12px;
   text-align: center;
+  hyphens: auto;
   text-transform: capitalize;
 }
 
