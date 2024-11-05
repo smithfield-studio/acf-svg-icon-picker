@@ -13,7 +13,11 @@
 
       renderPopup();
 
-      if (acfSvgIconPicker.svgs.length > 0) {
+      // count amount of items in object 
+      const count = Object.keys(acfSvgIconPicker.svgs).length;
+
+      if (count > 0) {
+
         renderIconsList();
       }
 
@@ -51,23 +55,25 @@
   function renderIconsList(svgs = acfSvgIconPicker.svgs) {
     let popupContents = '';
 
+    console.log(svgs);
+
     if (acfSvgIconPicker.svgs.length === 0) {
       popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
     } else {
-      const iconsList = svgs
-        .map((svg) => {
-          const filename = svg['name'].split('.');
-          const name = filename[0].replace(/[-_]/g, ' ');
-          const src = `${acfSvgIconPicker.path}${svg['icon']}`;
+      const iconsList = Object.keys(svgs).map((key) => {
+        const svg = svgs[key];
+        const src = svg['url'];
 
-          return `
-            <li data-svg="${svg['name']}">
-              <img src="${src}" alt="${name}"/>
-              <span>${name}</span>
-            </li>
-          `;
-        })
-        .join('');
+        return `
+                <li data-svg="${key}">
+                    <img src="${src}" alt="${svg['name']}"/>
+                    <span>${svg['name']}</span>
+                </li>
+            `;
+      }).join('');
+
+
+
 
       popupContents = `<ul>${iconsList}</ul>`;
     }
