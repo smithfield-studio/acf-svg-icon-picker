@@ -1,211 +1,104 @@
 (function ($) {
-  var active_item;
-  var item_width = 125;
-  var item_height = 116 + 6;
-  var recycled_items = [];
-
-  jQuery(document).on('click', 'li[data-svg]', function () {
-    var val = jQuery(this).attr('data-svg');
-    active_item.find('input').val(val);
-    active_item.find('.acf-svg-icon-picker__svg').html(
-      '<img src="' +
-      jQuery(this)
-        .find('img')
-        .attr('src') +
-      '" alt=""/>'
-    );
-    jQuery('.acf-svg-icon-picker__popup-holder').trigger('close');
-    jQuery('.acf-svg-icon-picker__popup-holder').remove();
-    jQuery('.acf-svg-icon-picker__img input').trigger('change');
-
-    active_item
-      .parents('.acf-svg-icon-picker')
-      .find('.acf-svg-icon-picker__remove')
-      .addClass('acf-svg-icon-picker__remove--active');
-  });
+  let active_item;
+  let isOpen = false;
 
   function initialize_field($el) {
-    $el.find('.acf-svg-icon-picker__img').on('click', function (e) {
+    $el.find('.acf-svg-icon-picker__selector').on('click', function (e) {
       e.preventDefault();
-      var is_open = true;
       active_item = $(this);
 
-      // Remove any existing popups to prevent duplicates
-      jQuery(".acf-svg-icon-picker__popup-holder").remove();
-
-      if (acfSvgIconPicker.svgs.length == 0) {
-        var list = '<p>' + acfSvgIconPicker.no_icons_msg + '</p>';
-      } else {
-        var list = `<ul id="icons-list">`;
-        list += `</ul>`;
+      if (isOpen) {
+        return;
       }
 
-      jQuery('body').append(
-        `<div class="acf-svg-icon-picker__popup-holder">
-        <div class="acf-svg-icon-picker__popup">
-        <a class="acf-svg-icon-picker__popup__close" href="javascript:">close</a>
-        <h4 class="acf-svg-icon-picker__popup__title">ACF Icon Picker - Choose icon</h4>
-        <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="Start typing to filter icons" />
-          ${list}
-        </div>
-      </div>`
-      );
+      renderPopup();
 
-      jQuery('.acf-svg-icon-picker__popup-holder').on('close', function () {
-        is_open = false;
-      });
-
-      var $list = $('#icons-list');
-      var margin = 200; // number of px to show above and below.
-      var columns = 4;
-      var svgs = acfSvgIconPicker.svgs;
-
-      function setListHeight() {
-        var total_lines = Math.ceil(svgs.length / columns);
-        $list.height(total_lines * item_height);
+      if (acfSvgIconPicker.svgs.length > 0) {
+        renderIconsList();
       }
 
-      function removeAllItems() {
-        $('[data-acf-icon-index]').each(function (i, el) {
-          var $el = $(el);
-          recycled_items.push($el);
-          $el.remove();
-        });
-      }
-
-      function render() {
-        if (!is_open) return;
-
-        var scroll_top = $('.acf-svg-icon-picker__popup').scrollTop();
-        var scroll_min = scroll_top - item_height - margin;
-        var scroll_max = scroll_top + $('.acf-svg-icon-picker__popup').height() + margin;
-        // Get the index of the first and last element from array we will show.
-        var index_min = Math.ceil(scroll_min / item_height) * columns;
-        var index_max = Math.ceil(scroll_max / item_height) * columns;
-
-        // remove unneeded items and add them to recycled items.
-        $('[data-acf-icon-index]').each(function (i, el) {
-          var $el = $(el);
-          var index = $el.attr('data-acf-icon-index');
-          var name = $el.attr('data-svg');
-          // Check if we have the element in the resulting array.
-          var elementExist = function () {
-            return svgs.find(function (svg) {
-              return svg.name === name;
-            });
-          }
-
-          if (index < index_min || index > index_max || !elementExist()) {
-            recycled_items.push($el);
-            $el.remove();
-          }
-        });
-
-        for (var i = index_min; i < index_max; i++) {
-          if (i < 0 || i >= svgs.length) continue;
-          var svg = svgs[i];
-          // Calculate the position of the item.
-          var y = Math.floor(i / columns) * item_height;
-          var x = i % columns * item_width;
-
-          // If we already have the element visible we can continue
-          var $el = $(`[data-acf-icon-index="${i}"][data-svg="${svg.name}"]`);
-          // If item already exist we can skip.
-          if ($el.length) continue;
-
-          if (recycled_items.length) {
-            // If there are recycled items reuse one.
-            $el = recycled_items.pop();
-          }
-          else {
-            // Or create a new element.
-            $el = $(`<li>
-              <div class="acf-svg-icon-picker__popup-svg">
-                <img src="" alt=""/>
-              </div>
-              <span class="icons-list__name"></span>
-            </li>`);
-          }
-
-          // We use attr instead of data since we want to use css selector.
-          $el.attr({
-            'data-svg': svg.name,
-            'data-acf-icon-index': i
-          }).css({
-            transform: `translate(${x}px, ${y}px)`
-          });
-          const filename = svg['name'].split('.');
-          const name = filename[0].replace(/[-_]/g, ' ');
-          $el.find('.icons-list__name').text(name);
-          $el.find('img').attr('src', `${acfSvgIconPicker.path}${svg['icon']}`);
-          $list.append($el);
-        }
-
-        requestAnimationFrame(render);
-      }
-      if (svgs.length) {
-        setListHeight();
-        render();
-      }
-
-      const iconsFilter = document.querySelector('#filterIcons');
-
-      function filterIcons(wordToMatch) {
-        const normalizedWord = wordToMatch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        return acfSvgIconPicker.svgs.filter(icon => {
-          var name = icon.name.replace(/[-_]/g, ' ').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-          const regex = new RegExp(normalizedWord, 'gi');
-          return name.match(regex);
-        });
-      }
-
-      function displayResults() {
-        svgs = filterIcons($(this).val());
-        removeAllItems();
-        setListHeight();
-      }
-
-      function debounce(func, wait) {
-        var timeout;
-        return function (...args) {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-      }
-
-      iconsFilter.focus();
-
-      iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
+      setupFilter();
 
       // Closing
-      jQuery('.acf-svg-icon-picker__popup__close').on('click', function (e) {
-        e.stopPropagation();
-        is_open = false;
-        jQuery('.acf-svg-icon-picker__popup-holder').remove();
-      });
+      document
+        .querySelector('.acf-svg-icon-picker__popup-close')
+        .addEventListener('click', function (e) {
+          document.querySelector('.acf-svg-icon-picker__popup-overlay').remove();
+          isOpen = false;
+        });
     });
 
     // show the remove button if there is an icon selected
-    const $input = $el.find('input')
+    const $input = $el.find('input');
     if ($input.length && $input.val().length != 0) {
-      $el
-        .find('.acf-svg-icon-picker__remove')
-        .addClass('acf-svg-icon-picker__remove--active');
+      $el.find('.acf-svg-icon-picker__remove').addClass('acf-svg-icon-picker__remove--active');
     }
 
     $el.find('.acf-svg-icon-picker__remove').on('click', function (e) {
       e.preventDefault();
-      var parent = $(this).parents('.acf-svg-icon-picker');
+      const parent = $(this).parents('.acf-svg-icon-picker');
       parent.find('input').val('');
-      parent
-        .find('.acf-svg-icon-picker__svg')
-        .html('<span class="acf-svg-icon-picker__svg--span">+</span>');
+      parent.find('.acf-svg-icon-picker__icon').html('<span>+</span>');
 
-      jQuery('.acf-svg-icon-picker__img input').trigger('change');
+      jQuery('.acf-svg-icon-picker__selector input').trigger('change');
 
       parent
         .find('.acf-svg-icon-picker__remove')
         .removeClass('acf-svg-icon-picker__remove--active');
+    });
+  }
+
+  function renderIconsList(svgs = acfSvgIconPicker.svgs) {
+    let popupContents = '';
+
+    if (acfSvgIconPicker.svgs.length === 0) {
+      popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
+    } else {
+      const iconsList = svgs
+        .map((svg) => {
+          const filename = svg['name'].split('.');
+          const name = filename[0].replace(/[-_]/g, ' ');
+          const src = `${acfSvgIconPicker.path}${svg['icon']}`;
+
+          return `
+            <li data-svg="${svg['name']}">
+              <img src="${src}" alt="${name}"/>
+              <span>${name}</span>
+            </li>
+          `;
+        })
+        .join('');
+
+      popupContents = `<ul>${iconsList}</ul>`;
+    }
+
+    document.querySelector('.acf-svg-icon-picker__popup-contents').innerHTML = popupContents;
+  }
+
+  function renderPopup() {
+    const popup = `
+      <div class="acf-svg-icon-picker__popup-overlay" style="--acfsip-columns: ${acfSvgIconPicker.columns};">
+        <div class="acf-svg-icon-picker__popup">
+          <div class="acf-svg-icon-picker__popup-header">
+            <h4>${acfSvgIconPicker.msgs.title}</h4>
+            <button class="acf-svg-icon-picker__popup-close" title="${acfSvgIconPicker.msgs.close}">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
+            </button>
+            <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="${acfSvgIconPicker.msgs.filter}" />
+          </div>
+          <div class="acf-svg-icon-picker__popup-contents">
+            <!-- Icons rendered here -->
+          </div>
+        </div>
+      </div>
+    `;
+
+    jQuery('body').append(popup);
+    isOpen = true;
+
+    jQuery('.acf-svg-icon-picker__popup-overlay').on('close', function () {
+      jQuery('.acf-svg-icon-picker__popup-overlay').remove();
+      isOpen = false;
     });
   }
 
@@ -217,12 +110,63 @@
     });
   }
 
+  function setupFilter() {
+    const iconsFilter = document.querySelector('#filterIcons');
+
+    function filterIcons(wordToMatch) {
+      const normalizedWord = wordToMatch
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+      return acfSvgIconPicker.svgs.filter((icon) => {
+        const name = icon.name
+          .replace(/[-_]/g, ' ')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        const regex = new RegExp(normalizedWord, 'gi');
+        return name.match(regex);
+      });
+    }
+
+    function displayResults() {
+      svgs = filterIcons($(this).val());
+      renderIconsList(svgs);
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    iconsFilter.focus();
+    iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
+  }
+
+  jQuery(document).on('click', 'li[data-svg]', function () {
+    const val = jQuery(this).attr('data-svg');
+    const src = jQuery(this).find('img').attr('src');
+    active_item.find('input').val(val);
+    active_item.find('.acf-svg-icon-picker__icon').html(`<img src="${src}" alt=""/>`);
+    jQuery('.acf-svg-icon-picker__popup-overlay').trigger('close');
+    jQuery('.acf-svg-icon-picker__popup-overlay').remove();
+    jQuery('.acf-svg-icon-picker__selector input').trigger('change');
+
+    active_item
+      .parents('.acf-svg-icon-picker')
+      .find('.acf-svg-icon-picker__remove')
+      .addClass('acf-svg-icon-picker__remove--active');
+  });
+
   // Use MutationObserver to detect changes in the DOM
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.addedNodes.length) {
         $(mutation.addedNodes)
-          .find(".acf-svg-icon-picker")
+          .find('.acf-svg-icon-picker')
           .each(function () {
             initialize_field($(this));
           });
