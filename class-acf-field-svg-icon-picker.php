@@ -42,7 +42,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	/**
 	 * Stores the icons.
 	 */
-	private array $svgs = [];
+	public array $svgs = [];
 
 	/**
 	 * Constructor.
@@ -57,7 +57,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		$this->defaults    = ['initial_value' => ''];
 		$this->l10n        = ['error' => __('Error!', 'acf-svg-icon-picker')];
 		$this->url         = get_stylesheet_directory_uri();
-		$this->path_suffix = apply_filters('acf_svg_icon_picker_folder', 'resources/icons/');
+		$this->path_suffix = apply_filters('acf_svg_icon_picker_folder', 'icons/');
 		$this->path_suffix = apply_filters_deprecated('acf_icon_path_suffix', [$this->path_suffix], '4.0.0', 'acf_svg_icon_picker_folder');
 
 		// deprecate these two filters
@@ -84,17 +84,18 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	{
 		$priority_dir_settings = apply_filters('acf_svg_icon_picker_custom_location', false);
 
-		if (! is_array($priority_dir_settings)) {
+		if (false === $priority_dir_settings) {
 			return [];
 		}
 
-		if (! isset($priority_dir_settings['path']) || ! isset($priority_dir_settings['url'])) {
-			_doing_it_wrong(__FUNCTION__, __('The path and url for the custom icon location must be set in the acf_svg_icon_picker_custom_location filter.', 'acf-svg-icon-picker'), '1.0.0');
+		if (! is_array($priority_dir_settings) || ! isset($priority_dir_settings['path']) || ! isset($priority_dir_settings['url'])) {
+			_doing_it_wrong(__FUNCTION__, __('The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker'), '1.0.0');
 			return [];
 		}
 
 		$this->path = $priority_dir_settings['path'];
 		$this->url  = $priority_dir_settings['url'];
+
 		return $this->svg_collector($this->path, $this->url);
 	}
 
@@ -105,9 +106,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	private function check_theme_dirs(): array
 	{
+
 		$parent_theme_path = get_template_directory() . '/' . $this->path_suffix;
 		$child_theme_path  = get_stylesheet_directory() . '/' . $this->path_suffix;
-
 		$parent_theme_url = get_template_directory_uri() . '/' . $this->path_suffix;
 		$child_theme_url  = get_stylesheet_directory_uri() . '/' . $this->path_suffix;
 
@@ -115,8 +116,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 
 		if ($parent_theme_path !== $child_theme_path) {
 			$child_svgs = $this->svg_collector($child_theme_path, $child_theme_url);
-			$svgs       = array_merge($this->svgs, $child_svgs);
-			$svgs       = array_unique($this->svgs, SORT_REGULAR);
+			$svgs       = array_merge($svgs, $child_svgs);
+			$svgs       = array_unique($svgs, SORT_REGULAR);
 		}
 
 		return $svgs;
