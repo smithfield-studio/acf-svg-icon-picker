@@ -24,6 +24,16 @@
       "name": "houke"
     }
   ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org",
+      "only": [
+        "wpackagist-plugin/*",
+        "wpackagist-theme/*"
+      ]
+    }
+  ],
   "support": {
     "issues": "https://github.com/smithfield-studio/acf-svg-icon-picker/issues",
     "source": "https://github.com/smithfield-studio/acf-svg-icon-picker"
@@ -33,9 +43,12 @@
     "wp-coding-standards/wpcs": "^3.1",
     "phpcompatibility/php-compatibility": "^9",
     "phpstan/phpstan": "^1.7",
+    "phpunit/phpunit": "^9.0",
     "szepeviktor/phpstan-wordpress": "^1.1",
     "10up/phpcs-composer": "^3.0",
-    "php-stubs/acf-pro-stubs": "^6.0"
+    "php-stubs/acf-pro-stubs": "^6.0",
+    "yoast/phpunit-polyfills": "^3.0",
+    "wpackagist-plugin/advanced-custom-fields": "^6.0"
   },
   "scripts": {
     "analyze": "phpstan analyse --memory-limit=1G",
@@ -44,7 +57,9 @@
   },
   "config": {
     "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "pestphp/pest-plugin": true,
+      "composer/installers": true
     }
   }
 }
