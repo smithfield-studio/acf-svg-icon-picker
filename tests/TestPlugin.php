@@ -27,7 +27,7 @@ class TestPlugin extends \WP_UnitTestCase
 	}
 
 	/**
-	 * Test if the plugin is loaded.
+	 * Test if field type is active.
 	 */
 	public function test_is_field_type_active()
 	{
@@ -36,7 +36,7 @@ class TestPlugin extends \WP_UnitTestCase
 	}
 
 	/**
-	 * Test if the plugin is loaded.
+	 * Test if the plugin collects the SVG files from the parent theme.
 	 */
 	public function test_found_files_in_parent_theme()
 	{
@@ -49,6 +49,11 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertEquals(4, $count);
 	}
 
+	/**
+	 * Test if the plugin collects the SVG files from both the parent and child theme.
+	 * The parent theme has 4 SVG files, and the child theme has 2 SVG files but one of them is the same as the parent theme.
+	 * Thus the child theme icon should be used totalling to 5 icons.
+	 */
 	public function test_found_files_in_child_theme()
 	{
 		switch_theme('test-child-theme');
@@ -60,6 +65,10 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertEquals(5, $count);
 	}
 
+
+	/**
+	 * Test if the plugin collects the SVG files from the parent theme and the child theme and if the correct paths are used.
+	 */
 	public function test_found_files_override()
 	{
 		switch_theme('test-child-theme');
@@ -76,6 +85,9 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertEquals('http://example.org/wp-content/themes/test-theme/icons/linkedin.svg', $facebook['url']);
 	}
 
+	/**
+	 * Test if the plugin collects the SVG files from the parent theme when a custom folder is set.
+	 */
 	public function test_custom_theme_dirs()
 	{
 		switch_theme('test-child-theme');
@@ -96,7 +108,9 @@ class TestPlugin extends \WP_UnitTestCase
 	}
 
 
-
+	/**
+	 * Test if the _doing_it_wrong() function is called when the custom location filter is not used correctly.
+	 */
 	public function test_custom_dir_override_wrong_filter_usage()
 	{
 		switch_theme('test-child-theme');
@@ -110,6 +124,9 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->setExpectedIncorrectUsage('check_priority_dir');
 	}
 
+	/**
+	 * Test if the plugin collects the SVG files from a custom location.
+	 */
 	public function test_custom_dir_override()
 	{
 		switch_theme('test-child-theme');
