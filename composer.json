@@ -32,9 +32,13 @@
   "require-dev": {
     "wp-coding-standards/wpcs": "^3.1",
     "phpcompatibility/php-compatibility": "^9",
-    "10up/phpcs-composer": "^3.0"
+    "phpstan/phpstan": "^1.7",
+    "szepeviktor/phpstan-wordpress": "^1.1",
+    "10up/phpcs-composer": "^3.0",
+    "php-stubs/acf-pro-stubs": "^6.0"
   },
   "scripts": {
+    "analyze": "phpstan analyse --memory-limit=1G",
     "cs": "@php ./vendor/bin/phpcs",
     "cs:fix": "@php ./vendor/bin/phpcbf"
   },

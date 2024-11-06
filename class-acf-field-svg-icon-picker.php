@@ -6,7 +6,7 @@
 
 namespace SmithfieldStudio\AcfSvgIconPicker;
 
-if (!defined('ABSPATH')) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
@@ -14,8 +14,9 @@ if (!defined('ABSPATH')) {
  * Field class for the SVG Icon Picker field.
  */
 class ACF_Field_Svg_Icon_Picker extends \acf_field
-
 {
+
+
 	/**
 	 * Controls field type visibility in REST requests.
 	 *
@@ -66,7 +67,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		/**
 		 * Check if the custom icon location is set by filter and if not, check the theme directories for icons.
 		 */
-		$svgs = $this->check_priority_dir();
+		$svgs       = $this->check_priority_dir();
 		$this->svgs = empty($svgs) ? $this->check_theme_dirs() : $svgs;
 
 		parent::__construct();
@@ -77,18 +78,18 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 * If it is, it sets the path and url to the custom location and collects the icons in that specific location.
 	 *
 	 * @throws \Exception if the path or url for the custom icon location are not set
-	 * @return array 
+	 * @return array
 	 */
 	private function check_priority_dir(): array
 	{
 		$priority_dir_settings = apply_filters('acf_svg_icon_picker_custom_location', false);
 
-		if (!is_array($priority_dir_settings)) {
+		if (! is_array($priority_dir_settings)) {
 			return [];
 		}
 
-		if (!isset($priority_dir_settings['path']) || !isset($priority_dir_settings['url'])) {
-			throw new \Exception(__('The path and url for the custom icon location must be set in the acf_svg_icon_picker_custom_location filter.', 'acf-svg-icon-picker'));
+		if (! isset($priority_dir_settings['path']) || ! isset($priority_dir_settings['url'])) {
+			_doing_it_wrong(__FUNCTION__, __('The path and url for the custom icon location must be set in the acf_svg_icon_picker_custom_location filter.', 'acf-svg-icon-picker'), '1.0.0');
 			return [];
 		}
 
@@ -114,8 +115,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 
 		if ($parent_theme_path !== $child_theme_path) {
 			$child_svgs = $this->svg_collector($child_theme_path, $child_theme_url);
-			$svgs = array_merge($this->svgs, $child_svgs);
-			$svgs = array_unique($this->svgs, SORT_REGULAR);
+			$svgs       = array_merge($this->svgs, $child_svgs);
+			$svgs       = array_unique($this->svgs, SORT_REGULAR);
 		}
 
 		return $svgs;
@@ -143,7 +144,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 					name="<?php echo esc_attr($field['name']); ?>"
 					value="<?php echo esc_attr($input_icon); ?>" />
 			</div>
-			<?php if (!$field['required']) { ?>
+			<?php if (! $field['required']) { ?>
 				<button class="acf-svg-icon-picker__remove">
 					<?php esc_html_e('Remove', 'acf-svg-icon-picker'); ?>
 				</button>
@@ -184,18 +185,22 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	/**
 	 * Collects the icons from the specified path.
 	 *
-	 * @var string the path to the icons to scan for SVG files
+	 * @param string $path The path to the icons to scan for SVG files.
+	 * @param string $url The url to the icons.
 	 */
 	private function svg_collector(string $path, string $url): array
 	{
 		$svg_files = [];
-		if (!is_dir($path)) {
+		if (! is_dir($path)) {
 			return [];
 		}
 
-		$found_files = array_filter(scandir($path), function ($file) {
-			return 'svg' === pathinfo($file, PATHINFO_EXTENSION);
-		});
+		$found_files = array_filter(
+			scandir($path),
+			function ($file) {
+				return 'svg' === pathinfo($file, PATHINFO_EXTENSION);
+			}
+		);
 
 		if (empty($found_files)) {
 			return [];
