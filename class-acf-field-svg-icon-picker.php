@@ -60,9 +60,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		$this->path_suffix = apply_filters('acf_svg_icon_picker_folder', 'icons/');
 		$this->path_suffix = apply_filters_deprecated('acf_icon_path_suffix', [$this->path_suffix], '4.0.0', 'acf_svg_icon_picker_folder');
 
-		// deprecate these two filters
-		apply_filters('acf_icon_path', ACF_SVG_ICON_PICKER_PATH) . $this->path_suffix;
-		apply_filters('acf_icon_url', ACF_SVG_ICON_PICKER_URL) . $this->path_suffix;
+
+		apply_filters_deprecated('acf_icon_path', [''], '4.0.0', '', 'acf_icon_path filter is no longer in use, please check the docs of ACF SVG Icon Picker Field') . $this->path_suffix;
+		apply_filters_deprecated('acf_icon_url', [''], '4.0.0', '', 'acf_icon_url filter is no longer in use, please check the docs of ACF SVG Icon Picker Field') . $this->path_suffix;
 
 		/**
 		 * Check if the custom icon location is set by filter and if not, check the theme directories for icons.
