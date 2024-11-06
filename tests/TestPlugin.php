@@ -107,6 +107,34 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertEquals('http://example.org/wp-content/themes/test-child-theme/custom-icons/chain.svg', $chain['url']);
 	}
 
+	public function test_get_svg_icon_uri_helper_function()
+	{
+		switch_theme('test-child-theme');
+		$icon_uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('amazon');
+		$this->assertEquals('http://example.org/wp-content/themes/test-child-theme/icons/amazon.svg', $icon_uri);
+	}
+
+	public function test_get_svg_icon_path_helper_function()
+	{
+		switch_theme('test-child-theme');
+		$icon_path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('linkedin');
+		$this->assertEquals(WP_CONTENT_DIR . '/themes/test-theme/icons/linkedin.svg', $icon_path);
+	}
+
+	public function test_get_svg_icon_uri_non_existent_icon()
+	{
+		switch_theme('test-child-theme');
+		$icon_uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('non-existent-icon');
+		$this->assertEquals('', $icon_uri);
+	}
+
+	public function test_get_svg_icon_herlper_function()
+	{
+		switch_theme('test-child-theme');
+		$icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('amazon');
+		$this->assertStringContainsString('<svg', $icon);
+	}
+
 
 	/**
 	 * Test if the _doing_it_wrong() function is called when the custom location filter is not used correctly.
