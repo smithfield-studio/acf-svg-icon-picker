@@ -66,9 +66,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		/**
 		 * Check if the custom icon location is set by filter and if not, check the theme directories for icons.
 		 */
-		if (false === $this->check_priority_dir()) {
-			$this->check_theme_dirs();
-		}
+		$svgs = $this->check_priority_dir();
+		$this->svgs = empty($svgs) ? $this->check_theme_dirs() : $svgs;
 
 		parent::__construct();
 	}
@@ -78,25 +77,24 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 * If it is, it sets the path and url to the custom location and collects the icons in that specific location.
 	 *
 	 * @throws \Exception if the path or url for the custom icon location are not set
-	 * @return boolean
+	 * @return array 
 	 */
-	private function check_priority_dir(): bool
+	private function check_priority_dir(): array
 	{
 		$priority_dir_settings = apply_filters('acf_svg_icon_picker_custom_location', false);
 
 		if (!is_array($priority_dir_settings)) {
-			return false;
+			return [];
 		}
 
 		if (!isset($priority_dir_settings['path']) || !isset($priority_dir_settings['url'])) {
 			throw new \Exception(__('The path and url for the custom icon location must be set in the acf_svg_icon_picker_custom_location filter.', 'acf-svg-icon-picker'));
-			return false;
+			return [];
 		}
 
 		$this->path = $priority_dir_settings['path'];
 		$this->url  = $priority_dir_settings['url'];
-		$this->svgs = $this->svg_collector($this->path, $this->url);
-		return true;
+		return $this->svg_collector($this->path, $this->url);
 	}
 
 	/**
@@ -112,15 +110,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		$parent_theme_url = get_template_directory_uri() . '/' . $this->path_suffix;
 		$child_theme_url  = get_stylesheet_directory_uri() . '/' . $this->path_suffix;
 
-		$this->svgs = $this->svg_collector($parent_theme_path, $parent_theme_url);
+		$svgs = $this->svg_collector($parent_theme_path, $parent_theme_url);
 
 		if ($parent_theme_path !== $child_theme_path) {
 			$child_svgs = $this->svg_collector($child_theme_path, $child_theme_url);
-			$this->svgs = array_merge($this->svgs, $child_svgs);
-			$this->svgs = array_unique($this->svgs, SORT_REGULAR);
+			$svgs = array_merge($this->svgs, $child_svgs);
+			$svgs = array_unique($this->svgs, SORT_REGULAR);
 		}
 
-		return $this->svgs;
+		return $svgs;
 	}
 
 	/**
