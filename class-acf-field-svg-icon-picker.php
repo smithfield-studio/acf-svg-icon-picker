@@ -212,16 +212,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		foreach ($found_files as $key => $file) {
-			$name     = explode('.', $file)[0];
-			$filename = pathinfo($file, PATHINFO_FILENAME);
-			$name     = str_replace(['-', '_'], ' ', $name);
+			$name	= explode('.', $file)[0];
+			$title	= ucwords(str_replace(['-', '_'], ' ', $name));
+			$key	= sanitize_key($name);
 
-			$svg_files[$name] = [
-				'name'     => $name,
-				'filename' => $filename,
-				'icon'     => $file,
-				'url'      => esc_url("{$url}{$file}"),
-				'path'     => "{$path}/{$file}",
+			$svg_files[$key] = [
+				'key'	=> $key,
+				'title'	=> $title,
+				'url'	=> esc_url("{$url}{$file}"),
+				'path'	=> "{$path}/{$file}",
 			];
 		}
 
