@@ -138,23 +138,13 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
 			$button_ui	= $svg_exists ? "<img src='{$icon['url']}' alt=''/>" : $button_ui;
 		}
-?>
-		<div class="acf-svg-icon-picker">
-			<div class="acf-svg-icon-picker__selector">
-				<div class="acf-svg-icon-picker__icon">
-					<?php echo $button_ui; ?>
-				</div>
-				<input type="hidden" readonly
-					name="<?php echo esc_attr($field['name']); ?>"
-					value="<?php echo esc_attr($saved_value); ?>" />
-			</div>
-			<?php if (! $field['required']) { ?>
-				<button class="acf-svg-icon-picker__remove">
-					<?php esc_html_e('Remove', 'acf-svg-icon-picker'); ?>
-				</button>
-			<?php } ?>
-		</div>
-<?php
+
+		$this->render_view('acf-field', [
+			'field'			=> $field,
+			'saved_value'	=> $saved_value,
+			'icon'			=> $icon,
+			'button_ui'		=> $button_ui,
+		]);
 	}
 
 	/**
@@ -162,8 +152,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function input_admin_enqueue_scripts()
 	{
+		// @phpstan-ignore constant.notFound
 		$url = ACF_SVG_ICON_PICKER_URL;
-		wp_register_script('acf-input-svg-icon-picker', "{$url}assets/js/input.js", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION, true);
+		wp_register_script('acf-input-svg-icon-picker', "{$url}resources/scripts/input.js", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION, true);
 		wp_enqueue_script('acf-input-svg-icon-picker');
 
 		wp_localize_script(
@@ -182,7 +173,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 			]
 		);
 
-		wp_register_style('acf-input-svg-icon-picker', "{$url}assets/css/input.css", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION);
+		wp_register_style('acf-input-svg-icon-picker', "{$url}resources/styles/input.css", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION);
 		wp_enqueue_style('acf-input-svg-icon-picker');
 	}
 
@@ -251,5 +242,24 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		return $icon;
+	}
+
+	/**
+	 * Render a php/html view.
+	 *
+	 * @param string $view The view to render.
+	 * @param array $data The data to pass to the view.
+	 */
+	private function render_view(string $view, array $data)
+	{
+		$plugin_path = ACF_SVG_ICON_PICKER_PATH;
+		$path = "{$plugin_path }resources/views/'{$view}.php";
+
+		if (! file_exists($path)) {
+			return;
+		}
+
+		extract($data);
+		include $path;
 	}
 }
