@@ -119,10 +119,14 @@
         .toLowerCase();
 
       let svgs = {};
-      Object.keys(acfSvgIconPicker.svgs).forEach((key) => {
+      Object.keys(acfSvgIconPicker.svgs).map((key) => {
         const icon = acfSvgIconPicker.svgs[key];
+        const normalizedTitle = icon['title']
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
 
-        if (icon['title'].toLowerCase().includes(normalizedWord)) {
+        if (normalizedTitle.includes(normalizedWord)) {
           svgs[key] = icon;
         }
       });
