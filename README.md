@@ -41,7 +41,7 @@ We recommend storing your SVG icons in a folder within your theme. This plugin d
 When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
 
 ### Helper functions
-We provide helper functions to fetch icons from the theme folder, without it matering if the icon is stored in the parent or child theme.
+We provide helper functions to fetch icons from the theme folder, without it mattering if the icon is stored in the parent or child theme.
 
 ```php
 $my_icon_field = get_field('my_icon_field');
@@ -67,7 +67,7 @@ add_filter('acf_icon_path_suffix', function () {
 });
 ```
 
-In case you do not want to store the icons in the theme folder, you can use the below filter to change the path to the icons directory to a custom location.
+In case you do not want to store the icons in the theme folder, you can use the filter below to change the path to an icons directory in a custom location.
 In this example, the icons are stored in the `WP_CONTENT_DIR . '/icons/'` folder.
 
 ```php

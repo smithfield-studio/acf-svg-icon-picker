@@ -26,12 +26,6 @@ We use [EasyCodingStandard](https://github.com/symplify/easy-coding-standard) fo
 
 We use tools to automatically check and apply the coding standards to our codebase (including the documentation), reducing the manual work to a minimum.
 
-To run all checks, you can run the `qa` script.
-
-```bash
-composer qa
-```
-
 ### Check and apply coding standards
 
 We use EasyCodingStandard to automatically check and apply the coding standards.
