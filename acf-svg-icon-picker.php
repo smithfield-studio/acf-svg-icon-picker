@@ -33,7 +33,7 @@ define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));
 /**
  * Include SVG Icon Picker field type.
  */
-function include_field_types()
+function include_field_types(): void
 {
 	if (! function_exists('acf_register_field_type')) {
 		return;
@@ -48,7 +48,7 @@ add_action('init', __NAMESPACE__ . '\\include_field_types');
 
 /**
  * Get the URI of an SVG icon.
- * 
+ *
  * @api
  * @since 4.0.0
  * @param string $icon_name The name of the icon we want to get the URI for.
@@ -62,12 +62,12 @@ function get_svg_icon_uri(string $icon_name): string
 
 	$location = apply_filters('acf_svg_icon_picker_folder', 'icons/');
 
-	return get_theme_file_uri($location  . $icon_name . '.svg');
+	return get_theme_file_uri("{$location}{$icon_name}.svg");
 }
 
 /**
  * Get the path of an SVG icon.
- * 
+ *
  * @api
  * @param string $icon_name The name of the icon we want to get the path for.
  * @return string The path of the icon, empty string if the icon does not exist.
@@ -76,7 +76,7 @@ function get_svg_icon_path(string $icon_name): string
 {
 	$location = apply_filters('acf_svg_icon_picker_folder', 'icons/');
 
-	$path = get_theme_file_path($location  . $icon_name . '.svg');
+	$path = get_theme_file_path("{$location}{$icon_name}.svg");
 
 	if (! file_exists($path)) {
 		return '';
@@ -87,7 +87,7 @@ function get_svg_icon_path(string $icon_name): string
 
 /**
  * Get the SVG icon.
- * 
+ *
  * @api
  * @param string $icon_name The name of the icon we want to get.
  * @return string The SVG icon file, empty string if the icon does not exist.

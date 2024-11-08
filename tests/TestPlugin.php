@@ -46,7 +46,7 @@ class TestPlugin extends \WP_UnitTestCase
 		$svgs = $plugin->svgs;
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
-		$this->assertEquals(4, $count);
+		$this->assertEquals(5, $count);
 	}
 
 	/**
@@ -62,7 +62,7 @@ class TestPlugin extends \WP_UnitTestCase
 		$svgs = $plugin->svgs;
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
-		$this->assertEquals(5, $count);
+		$this->assertEquals(6, $count);
 	}
 
 
@@ -137,7 +137,7 @@ class TestPlugin extends \WP_UnitTestCase
 
 	/**
 	 * Test if the deprecated filters are correctly forwarded to the new filter.
-	 * 
+	 *
 	 * @expectedDeprecated acf_icon_path_suffix
 	 */
 	public function test_deprecated_filters()
@@ -200,5 +200,23 @@ class TestPlugin extends \WP_UnitTestCase
 
 		$bell = $svgs['bell'];
 		$this->assertEquals('http://example.org/wp-content/random-location-icons/bell.svg', $bell['url']);
+	}
+
+	/**
+	 * Test if the plugin finds an icon using the sanitised and legacy (unsanitised) acf value
+	 */
+	public function test_legacy_keys_still_find_icons()
+	{
+        switch_theme('test-theme');
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $icon_key = 'thunder-storm';
+        $legacy_icon_key = 'thunder storm';
+
+        $icon = $plugin->get_icon_data($icon_key);
+        $this->assertNotEmpty($icon);
+
+        $legacy_icon = $plugin->get_icon_data($legacy_icon_key);
+        $this->assertNotEmpty($legacy_icon);
 	}
 }

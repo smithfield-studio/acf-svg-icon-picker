@@ -1,26 +1,24 @@
 <?xml version="1.0"?>
 <ruleset>
+
 	<!-- Files or directories to check -->
 	<file>.</file>
-
-   <exclude-pattern>*/wordpress/*</exclude-pattern>
+	<exclude-pattern>*/wordpress/*</exclude-pattern>
+	<exclude-pattern>*/wp-content/*</exclude-pattern>
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/tests/*</exclude-pattern>
 
 	<!-- Path to strip from the front of file paths inside reports (displays shorter paths) -->
 	<arg name="basepath" value="." />
 
-	<!-- Set a minimum PHP version for PHPCompatibility -->
+  <!-- Set a minimum PHP version for PHPCompatibility -->
 	<config name="testVersion" value="8.1" />
 
-   <!-- Use 10up's phpcs ruleset -->
-	<rule ref="10up-Default">
-	</rule>
-
+  <!-- Use 10up's phpcs ruleset -->
+	<rule ref="10up-Default"></rule>
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="acf-svg-icon-picker"/>
+			<property name="text_domain" type="array" value="acf-svg-icon-picker" />
 		</properties>
 	</rule>
-	
 </ruleset>

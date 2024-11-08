@@ -130,28 +130,21 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function render_field($field)
 	{
-		$input_icon = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-		$svg        = locate_template($this->path_suffix . $input_icon . '.svg');
-		$svg_exists = file_exists($svg);
-		$svg_url    = esc_url($this->url . $input_icon . '.svg');
+		$saved_value	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
+		$icon			= !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
+		$button_ui		= '<span>&plus;</span>';
 
-?>
-		<div class="acf-svg-icon-picker">
-			<div class="acf-svg-icon-picker__selector">
-				<div class="acf-svg-icon-picker__icon">
-					<?php echo $svg_exists ? '<img src="' . esc_url($svg_url) . '" alt=""/>' : '<span>&plus;</span>'; ?>
-				</div>
-				<input type="hidden" readonly
-					name="<?php echo esc_attr($field['name']); ?>"
-					value="<?php echo esc_attr($input_icon); ?>" />
-			</div>
-			<?php if (! $field['required']) { ?>
-				<button class="acf-svg-icon-picker__remove">
-					<?php esc_html_e('Remove', 'acf-svg-icon-picker'); ?>
-				</button>
-			<?php } ?>
-		</div>
-<?php
+		if (!empty($saved_value) && !empty($icon)) {
+			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
+			$button_ui	= $svg_exists ? "<img src='{$icon['url']}' alt=''/>" : $button_ui;
+		}
+
+		$this->render_view('acf-field', [
+			'field'			=> $field,
+			'saved_value'	=> $saved_value,
+			'icon'			=> $icon,
+			'button_ui'		=> $button_ui,
+		]);
 	}
 
 	/**
@@ -159,8 +152,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function input_admin_enqueue_scripts()
 	{
+		// @phpstan-ignore constant.notFound
 		$url = ACF_SVG_ICON_PICKER_URL;
-		wp_register_script('acf-input-svg-icon-picker', "{$url}assets/js/input.js", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION, true);
+		wp_register_script('acf-input-svg-icon-picker', "{$url}resources/scripts/input.js", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION, true);
 		wp_enqueue_script('acf-input-svg-icon-picker');
 
 		wp_localize_script(
@@ -179,7 +173,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 			]
 		);
 
-		wp_register_style('acf-input-svg-icon-picker', "{$url}assets/css/input.css", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION);
+		wp_register_style('acf-input-svg-icon-picker', "{$url}resources/styles/input.css", ['acf-input'], ACF_SVG_ICON_PICKER_VERSION);
 		wp_enqueue_style('acf-input-svg-icon-picker');
 	}
 
@@ -208,19 +202,64 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		foreach ($found_files as $key => $file) {
-			$name     = explode('.', $file)[0];
-			$filename = pathinfo($file, PATHINFO_FILENAME);
-			$name     = str_replace(['-', '_'], ' ', $name);
+			$name	= explode('.', $file)[0];
+			$legacy_key = str_replace(['-', '_'], ' ', $name);
+			$title	= ucwords($legacy_key);
+			$key	= sanitize_key($name);
 
-			$svg_files[$name] = [
-				'name'     => $name,
-				'filename' => $filename,
-				'icon'     => $file,
-				'url'      => $url . $file,
+			$svg_files[$key] = [
+				'key'			=> $key,
+				'legacy_key'	=> $legacy_key,
+				'title'			=> $title,
+				'url'			=> esc_url("{$url}{$file}"),
+				'path'			=> "{$path}/{$file}",
 			];
 		}
 
 		return $svg_files;
 	}
+
+	/**
+	 * Get the icon data.
+	 *
+	 * @param string $key The icon key.
+	 */
+	public function get_icon_data(string $key): array
+	{
+		$icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
+
+		// if no icon found in array keys, check legacy_key field
+		if (empty($icon)) {
+			$icon = array_filter($this->svgs, function ($svg) use ($key) {
+				return $svg['legacy_key'] === $key;
+			});
+
+			if (empty($icon)) {
+				return [];
+			}
+
+			$icon = reset($icon);
+		}
+
+		return $icon;
+	}
+
+	/**
+	 * Render a php/html view.
+	 *
+	 * @param string $view The view to render.
+	 * @param array $data The data to pass to the view.
+	 */
+	private function render_view(string $view, array $data)
+	{
+		$plugin_path = ACF_SVG_ICON_PICKER_PATH;
+		$path = "{$plugin_path}resources/views/{$view}.php";
+
+		if (! file_exists($path)) {
+			return;
+		}
+
+		extract($data);
+		include $path;
+	}
 }
-?>
