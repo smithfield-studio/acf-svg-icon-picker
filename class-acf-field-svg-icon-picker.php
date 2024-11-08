@@ -253,7 +253,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	private function render_view(string $view, array $data)
 	{
 		$plugin_path = ACF_SVG_ICON_PICKER_PATH;
-		$path = "{$plugin_path }resources/views/'{$view}.php";
+		$path = "{$plugin_path}resources/views/{$view}.php";
 
 		if (! file_exists($path)) {
 			return;
