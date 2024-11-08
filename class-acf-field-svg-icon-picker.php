@@ -224,7 +224,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 *
 	 * @param string $key The icon key.
 	 */
-	private function get_icon_data(string $key): array
+	public function get_icon_data(string $key): array
 	{
 		$icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
 
