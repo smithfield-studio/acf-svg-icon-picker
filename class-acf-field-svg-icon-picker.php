@@ -130,14 +130,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function render_field($field)
 	{
-		$input_icon = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-		$icon_data  = [];
-		$button_ui  = '<span>&plus;</span>';
+		$input_icon	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
+		$icon		= [];
+		$button_ui	= '<span>&plus;</span>';
 
-		if (!empty($input_icon)) {
-			$icon_data  = !empty($this->svgs[$input_icon]) ? $this->svgs[$input_icon] : null;
-			$svg_exists = file_exists($icon_data['path']);
-			$button_ui = $svg_exists ? "<img src='{$icon_data['url']}' alt=''/>" : '<span>&plus;</span>';
+		if (!empty($input_icon) && !empty($this->svgs[$input_icon])) {
+			$icon		= $this->svgs[$input_icon];
+			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
+			$button_ui	= $svg_exists ? "<img src='{$icon['url']}' alt=''/>" : $button_ui;
 		}
 ?>
 		<div class="acf-svg-icon-picker">
