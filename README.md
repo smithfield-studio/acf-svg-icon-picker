@@ -94,24 +94,24 @@ Updated to work with ACF v6.3 and above.
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
 * 4.0.0:
-  * Remove/deprecate legacy filters, refactor and simplify icon path filters by @Levdbas in #25
-  * add unit tests, phpstan and return types by @Levdbas in #25
-  * add better support for hashed assets by @mike-sheppard in #26
-* 3.1.4: Fix filter on filenames with diacritical marks by @Rvervuurt in #21
-* 3.1.3: Added MutationObserver by @chrisbakr in #20
-* 3.1.2: Add debounce to improve filter performance by @stefanmomm in #17
-* 3.1.1: Optimize css by @stefanmomm in #16
+  * Remove/deprecate legacy filters, refactor and simplify icon path filters by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
+  * add unit tests, phpstan and return types by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
+  * add better support for hashed assets by [@mike-sheppard](https://github.com/mike-sheppard) in [#26](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/26)
+* 3.1.4: Fix filter on filenames with diacritical marks by [@Rvervuurt](https://github.com/Rvervuurt) in [#21](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/21)
+* 3.1.3: Added MutationObserver by [@chrisbakr](https://github.com/chrisbakr) in [#20](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/20)
+* 3.1.2: Add debounce to improve filter performance by [@stefanmomm](https://github.com/stefanmomm) in [#17](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/17)
+* 3.1.1: Optimize css by [@stefanmomm](https://github.com/stefanmomm) in [#16](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/16)
 * 3.1.0: Changed name of field to `svg_icon_picker` to avoid conflicts with vanilla ACF Icon Picker field.
 * 3.0.0: Revert to original ACF field name, quick tidy + README updates
-* 2.0.0: Fix for ACF 6.3 which now has an official icon-picker field + merged open PRs from [Levdbas](https://github.com/houke/acf-icon-picker/pull/38) & [phschmanau](https://github.com/houke/acf-icon-picker/pull/37)
+* 2.0.0: Fix for ACF 6.3 which now has an official icon-picker field + merged open PRs from [@Levdbas](https://github.com/Levdbas) in [#38](https://github.com/houke/acf-icon-picker/pull/38) & [@phschmanau](https://github.com/phschmanau) in [#37](https://github.com/houke/acf-icon-picker/pull/37)
 ---
 * **Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker)**
 ---
-* 1.9.1: ACF 6 compatibility fix. Thanks to [idflood](https://github.com/houke/acf-icon-picker/pull/30)
-* 1.9.0: Fix issue with Gutenberg preview not updating when removing. Thanks to [cherbst](https://github.com/houke/acf-icon-picker/pull/23)
-* 1.8.0: Fix issue with Gutenberg not saving icon. Thanks to [tlewap](https://github.com/houke/acf-icon-picker/pull/17)
-* 1.7.0: 2 new filters for more control over icon path. Thanks to [benjibee](https://github.com/houke/acf-icon-picker/pull/11)
-* 1.6.0: Performance fix with lots of icons. Thanks to [idflood](https://github.com/houke/acf-icon-picker/pull/9)
+* 1.9.1: ACF 6 compatibility fix. Thanks to [@idflood](https://github.com/idflood) in [#30](https://github.com/houke/acf-icon-picker/pull/30)
+* 1.9.0: Fix issue with Gutenberg preview not updating when removing. Thanks to [@cherbst](https://github.com/cherbst) in [#23](https://github.com/houke/acf-icon-picker/pull/23)
+* 1.8.0: Fix issue with Gutenberg not saving icon. Thanks to [@tlewap](https://github.com/tlewap) in [#17](https://github.com/houke/acf-icon-picker/pull/17)
+* 1.7.0: 2 new filters for more control over icon path. Thanks to [@benjibee](https://github.com/benjibee) in [#11](https://github.com/houke/acf-icon-picker/pull/11)
+* 1.6.0: Performance fix with lots of icons. Thanks to [@idflood](https://github.com/idflood) in [#9](https://github.com/houke/acf-icon-picker/pull/9)
 * 1.5.0: Fix issue where searching for icons would break preview if icon name has space
 * 1.4.0: Add filter to change folder where svg icons are stored
 * 1.3.0: Adding close option on modal
