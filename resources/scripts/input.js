@@ -41,7 +41,7 @@
       e.preventDefault();
       const parent = $(this).parents('.acf-svg-icon-picker');
       parent.find('input').val('');
-      parent.find('.acf-svg-icon-picker__icon').html('<span>+</span>');
+      parent.find('.acf-svg-icon-picker__icon').html('<span>&plus;</span>');
 
       jQuery('.acf-svg-icon-picker__selector input').trigger('change');
 

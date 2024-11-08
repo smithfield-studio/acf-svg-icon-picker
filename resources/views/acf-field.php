@@ -14,7 +14,7 @@
             readonly
         />
     </div>
-    <?php if (!empty($field['required'])) { ?>
+    <?php if (empty($field['required'])) { ?>
         <button class="acf-svg-icon-picker__remove">
             <?php esc_html_e('Remove', 'acf-svg-icon-picker'); ?>
         </button>
