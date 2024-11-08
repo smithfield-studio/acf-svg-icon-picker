@@ -87,9 +87,6 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ])
 ```
 
-## Originally Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker)
-Updated to work with ACF v6.3 and above.
-
 ## Changelog
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
