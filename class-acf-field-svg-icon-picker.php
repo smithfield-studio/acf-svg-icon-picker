@@ -131,15 +131,19 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	public function render_field($field)
 	{
 		$input_icon = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-		$svg        = locate_template($this->path_suffix . $input_icon . '.svg');
-		$svg_exists = file_exists($svg);
-		$svg_url    = esc_url($this->url . $input_icon . '.svg');
+		$icon_data  = [];
+		$button_ui  = '<span>&plus;</span>';
 
+		if (!empty($input_icon)) {
+			$icon_data  = !empty($this->svgs[$input_icon]) ? $this->svgs[$input_icon] : null;
+			$svg_exists = file_exists($icon_data['path']);
+			$button_ui = $svg_exists ? "<img src='{$icon_data['url']}' alt=''/>" : '<span>&plus;</span>';
+		}
 ?>
 		<div class="acf-svg-icon-picker">
 			<div class="acf-svg-icon-picker__selector">
 				<div class="acf-svg-icon-picker__icon">
-					<?php echo $svg_exists ? '<img src="' . esc_url($svg_url) . '" alt=""/>' : '<span>&plus;</span>'; ?>
+					<?php echo $button_ui; ?>
 				</div>
 				<input type="hidden" readonly
 					name="<?php echo esc_attr($field['name']); ?>"
@@ -216,7 +220,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 				'name'     => $name,
 				'filename' => $filename,
 				'icon'     => $file,
-				'url'      => $url . $file,
+				'url'      => esc_url("{$url}{$file}"),
+				'path'     => "{$path}/{$file}",
 			];
 		}
 
