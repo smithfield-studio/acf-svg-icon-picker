@@ -36,7 +36,7 @@ If you're coming from the original ACF Icon Picker plugin, you can switch to thi
 5. Check if the field type is now available in your ACF field settings
 
 ## Usage of this plugin
-We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the `acf_icon_path_suffix` filter.
+We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_icon_path_suffix` filter](#filters).
 
 When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
 
@@ -79,7 +79,7 @@ add_filter('acf_svg_icon_picker_custom_location', function () {
 });
 ```
 
-### Using with [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
+### [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
 ```php
 $fields->addField('my_icon', 'svg_icon_picker', [
@@ -91,6 +91,7 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 Updated to work with ACF v6.3 and above.
 
 ## Changelog
+[See Releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases) (since forking from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker))
 
 * 3.1.0 - Changed name of field to `svg_icon_picker` to avoid conflicts with vanilla ACF Icon Picker field.
 * 3.0.0 - Revert to original ACF field name, quick tidy + README updates
