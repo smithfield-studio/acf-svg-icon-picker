@@ -53,7 +53,8 @@
   "scripts": {
     "analyze": "phpstan analyse --memory-limit=1G",
     "cs": "@php ./vendor/bin/phpcs",
-    "cs:fix": "@php ./vendor/bin/phpcbf"
+    "cs:fix": "@php ./vendor/bin/phpcbf",
+    "test": "@php ./vendor/bin/phpunit"
   },
   "config": {
     "allow-plugins": {
