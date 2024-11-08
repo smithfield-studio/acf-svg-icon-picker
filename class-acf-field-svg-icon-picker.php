@@ -128,29 +128,27 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 *
 	 * @param array $field the field array
 	 */
-	public function render_field($field)
+	public function render_field($field): void
 	{
 		$saved_value	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
 		$icon			= !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
-		$button_ui		= '<span>&plus;</span>';
+
 
 		if (!empty($saved_value) && !empty($icon)) {
 			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
-			$button_ui	= $svg_exists ? "<img src='{$icon['url']}' alt=''/>" : $button_ui;
 		}
 
 		$this->render_view('acf-field', [
 			'field'			=> $field,
 			'saved_value'	=> $saved_value,
 			'icon'			=> $icon,
-			'button_ui'		=> $button_ui,
 		]);
 	}
 
 	/**
 	 * Enqueue assets for the field.
 	 */
-	public function input_admin_enqueue_scripts()
+	public function input_admin_enqueue_scripts(): void
 	{
 		// @phpstan-ignore constant.notFound
 		$url = ACF_SVG_ICON_PICKER_URL;
@@ -252,6 +250,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	private function render_view(string $view, array $data)
 	{
+		// @phpstan-ignore constant.notFound
 		$plugin_path = ACF_SVG_ICON_PICKER_PATH;
 		$path = "{$plugin_path}resources/views/{$view}.php";
 
