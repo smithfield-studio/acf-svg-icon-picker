@@ -49,6 +49,7 @@ add_action('init', __NAMESPACE__ . '\\include_field_types');
 /**
  * Get the URI of an SVG icon.
  * 
+ * @api
  * @since 4.0.0
  * @param string $icon_name The name of the icon we want to get the URI for.
  * @return string The URI of the icon, empty string if the icon does not exist.
@@ -66,7 +67,8 @@ function get_svg_icon_uri(string $icon_name): string
 
 /**
  * Get the path of an SVG icon.
- *
+ * 
+ * @api
  * @param string $icon_name The name of the icon we want to get the path for.
  * @return string The path of the icon, empty string if the icon does not exist.
  */
@@ -85,7 +87,8 @@ function get_svg_icon_path(string $icon_name): string
 
 /**
  * Get the SVG icon.
- *
+ * 
+ * @api
  * @param string $icon_name The name of the icon we want to get.
  * @return string The SVG icon file, empty string if the icon does not exist.
  */
