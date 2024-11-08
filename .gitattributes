@@ -5,5 +5,8 @@
 /tests export-ignore
 /screenshots export-ignore
 /.github export-ignore
-/phpcs.xml.dist export-ignore
+/.github export-ignore
+/.phpcs.xml.dist export-ignore
+/.phpunit.xml.dist export-ignore
 /LICENSE.txt export-ignore
+/bin export-ignore

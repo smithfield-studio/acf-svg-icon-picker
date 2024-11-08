@@ -13,7 +13,10 @@
 
       renderPopup();
 
-      if (acfSvgIconPicker.svgs.length > 0) {
+      // count amount of items in object
+      const count = Object.keys(acfSvgIconPicker.svgs).length;
+
+      if (count > 0) {
         renderIconsList();
       }
 
@@ -38,7 +41,7 @@
       e.preventDefault();
       const parent = $(this).parents('.acf-svg-icon-picker');
       parent.find('input').val('');
-      parent.find('.acf-svg-icon-picker__icon').html('<span>+</span>');
+      parent.find('.acf-svg-icon-picker__icon').html('<span>&plus;</span>');
 
       jQuery('.acf-svg-icon-picker__selector input').trigger('change');
 
@@ -54,20 +57,16 @@
     if (acfSvgIconPicker.svgs.length === 0) {
       popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
     } else {
-      const iconsList = svgs
-        .map((svg) => {
-          const filename = svg['name'].split('.');
-          const name = filename[0].replace(/[-_]/g, ' ');
-          const src = `${acfSvgIconPicker.path}${svg['icon']}`;
+      const iconsList = Object.keys(svgs).map((key) => {
+        const svg = svgs[key];
 
-          return `
-            <li data-svg="${svg['name']}">
-              <img src="${src}" alt="${name}"/>
-              <span>${name}</span>
-            </li>
-          `;
-        })
-        .join('');
+        return `
+          <li data-svg="${key}">
+              <img src="${svg['url']}" alt="${svg['title']}"/>
+              <span>${svg['title']}</span>
+          </li>
+        `;
+      }).join('');
 
       popupContents = `<ul>${iconsList}</ul>`;
     }
@@ -113,20 +112,26 @@
   function setupFilter() {
     const iconsFilter = document.querySelector('#filterIcons');
 
-    function filterIcons(wordToMatch) {
+    function filterIcons(wordToMatch = '') {
       const normalizedWord = wordToMatch
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
-      return acfSvgIconPicker.svgs.filter((icon) => {
-        const name = icon.name
-          .replace(/[-_]/g, ' ')
+
+      let svgs = {};
+      Object.keys(acfSvgIconPicker.svgs).map((key) => {
+        const icon = acfSvgIconPicker.svgs[key];
+        const normalizedTitle = icon['title']
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .toLowerCase();
-        const regex = new RegExp(normalizedWord, 'gi');
-        return name.match(regex);
+
+        if (normalizedTitle.includes(normalizedWord)) {
+          svgs[key] = icon;
+        }
       });
+
+      return svgs;
     }
 
     function displayResults() {

@@ -1,0 +1,16 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+    level: 5 # Increase until "max"
+    scanFiles:
+        - acf-svg-icon-picker.php
+        - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
+    paths:
+        - ./acf-svg-icon-picker.php
+        - ./
+    excludePaths:
+        - tests/*
+        - docs/*
+        - vendor/*
+        - wp-content/*
+    ignoreErrors:

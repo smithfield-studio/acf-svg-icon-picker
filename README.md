@@ -3,7 +3,7 @@
 
 # ACF SVG Icon Picker Field
 
-Add an ACF field to your theme that lets users easily select SVG icons from a specified folder. The field returns the SVG's name.
+Add a field type to ACF for selecting SVG icons from a popup modal. Theme developers can provide a set of SVG icons to choose from.
 
 ## Compatibility
 
@@ -35,59 +35,51 @@ If you're coming from the original ACF Icon Picker plugin, you can switch to thi
 4. Go over your field configurations and change the field type from `icon-picker` to `svg_icon_picker` in the field settings. Be aware of the underscores in the field type name.
 5. Check if the field type is now available in your ACF field settings
 
-## Filters
+## Usage of this plugin
+We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_icon_path_suffix` filter](#filters).
 
-Use the below filters to override the default icon folder, path, and / or URL:
+When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
 
-```php
-// modify the path to the icons directory
-add_filter('acf_icon_path_suffix', 'acf_icon_path_suffix');
-
-function acf_icon_path_suffix($path_suffix) {
-    return 'assets/img/icons/';
-}
-
-// modify the path to the above prefix
-add_filter('acf_icon_path', 'acf_icon_path');
-
-function acf_icon_path($path_suffix) {
-    return plugin_dir_path(__FILE__);
-}
-
-// modify the URL to the icons directory to display on the page
-add_filter('acf_icon_url', 'acf_icon_url');
-
-function acf_icon_url($path_suffix) {
-    return plugin_dir_url( __FILE__ );
-}
-```
-
-### For Sage/Bedrock edit filters.php:
+### Helper functions
+We provide helper functions to fetch icons from the theme folder, without it mattering if the icon is stored in the parent or child theme.
 
 ```php
-/// modify the path to the icons directory
-add_filter('acf_icon_path_suffix',
-  function ( $path_suffix ) {
-    return '/assets/images/icons/'; // After assets folder you can define folder structure
-  }
-);
+$my_icon_field = get_field('my_icon_field');
 
-// modify the path to the above prefix
-add_filter('acf_icon_path',
-  function ( $path_suffix ) {
-    return '/app/public/web/themes/THEME_NAME/resources';
-  }
-);
+// Get the icon URL
+$icon_url = get_svg_icon_uri($my_icon_field);
 
-// modify the URL to the icons directory to display on the page
-add_filter('acf_icon_url',
-  function ( $path_suffix ) {
-    return get_stylesheet_directory_uri();
-  }
-);
+// Get the icon file system path
+$icon_path = get_svg_icon_path($my_icon_field);
+
+// Get the icon contents
+$icon_svg = get_svg_icon($my_icon_field);
 ```
 
-## Using with [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
+### Filters
+
+Use the below filters to override the default icon folder inside your theme.
+
+```php
+// modify the path to the icons directory in your theme.
+add_filter('acf_icon_path_suffix', function () {
+  return 'resources/icons/';
+});
+```
+
+In case you do not want to store the icons in the theme folder, you can use the filter below to change the path to an icons directory in a custom location.
+In this example, the icons are stored in the `WP_CONTENT_DIR . '/icons/'` folder.
+
+```php
+add_filter('acf_svg_icon_picker_custom_location', function () {
+  return [
+    'path' => WP_CONTENT_DIR . '/icons/',
+    'url' =>  content_url() . '/icons/',
+  ];
+});
+```
+
+### [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
 ```php
 $fields->addField('my_icon', 'svg_icon_picker', [
@@ -99,6 +91,7 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 Updated to work with ACF v6.3 and above.
 
 ## Changelog
+[See Releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases) (since forking from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker))
 
 * 3.1.0 - Changed name of field to `svg_icon_picker` to avoid conflicts with vanilla ACF Icon Picker field.
 * 3.0.0 - Revert to original ACF field name, quick tidy + README updates
