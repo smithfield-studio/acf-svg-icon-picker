@@ -133,11 +133,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		$saved_value	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
 		$icon			= !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
 
-
-		if (!empty($saved_value) && !empty($icon)) {
-			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
-		}
-
 		$this->render_view('acf-field', [
 			'field'			=> $field,
 			'saved_value'	=> $saved_value,

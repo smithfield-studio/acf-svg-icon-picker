@@ -13,7 +13,9 @@
   ],
   "authors": [
     {
-      "name": "Mike Sheppard"
+      "name": "Mike Sheppard",
+      "email": "mike@smithfield.studio",
+      "homepage": "https://smithfield.studio"
     },
     {
       "name": "Erik van der Bas",
