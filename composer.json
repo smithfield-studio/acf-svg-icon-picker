@@ -51,11 +51,17 @@
     "wpackagist-plugin/advanced-custom-fields": "^6.0"
   },
   "scripts": {
-    "analyze": "phpstan analyse --memory-limit=1G",
     "cs": "@php ./vendor/bin/phpcs",
     "cs:fix": "@php ./vendor/bin/phpcbf",
+    "phpstan": "phpstan analyse --memory-limit=1G",
     "test": "@php ./vendor/bin/phpunit"
   },
+  "scripts-aliases": {
+    "cs": ["lint"],
+    "cs:fix": ["lint:fix"],
+    "phpstan": ["stan", "analyze", "analyse"],
+    "test": ["unit", "tests"]
+},
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true,
