@@ -13,11 +13,10 @@
 
       renderPopup();
 
-      // count amount of items in object 
+      // count amount of items in object
       const count = Object.keys(acfSvgIconPicker.svgs).length;
 
       if (count > 0) {
-
         renderIconsList();
       }
 
@@ -55,25 +54,19 @@
   function renderIconsList(svgs = acfSvgIconPicker.svgs) {
     let popupContents = '';
 
-    console.log(svgs);
-
     if (acfSvgIconPicker.svgs.length === 0) {
       popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
     } else {
       const iconsList = Object.keys(svgs).map((key) => {
         const svg = svgs[key];
-        const src = svg['url'];
 
         return `
-                <li data-svg="${key}">
-                    <img src="${src}" alt="${svg['name']}"/>
-                    <span>${svg['name']}</span>
-                </li>
-            `;
+          <li data-svg="${key}">
+              <img src="${svg['url']}" alt="${svg['title']}"/>
+              <span>${svg['title']}</span>
+          </li>
+        `;
       }).join('');
-
-
-
 
       popupContents = `<ul>${iconsList}</ul>`;
     }
@@ -119,20 +112,22 @@
   function setupFilter() {
     const iconsFilter = document.querySelector('#filterIcons');
 
-    function filterIcons(wordToMatch) {
+    function filterIcons(wordToMatch = '') {
       const normalizedWord = wordToMatch
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
-      return acfSvgIconPicker.svgs.filter((icon) => {
-        const name = icon.name
-          .replace(/[-_]/g, ' ')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase();
-        const regex = new RegExp(normalizedWord, 'gi');
-        return name.match(regex);
+
+      let svgs = {};
+      Object.keys(acfSvgIconPicker.svgs).forEach((key) => {
+        const icon = acfSvgIconPicker.svgs[key];
+
+        if (icon['title'].toLowerCase().includes(normalizedWord)) {
+          svgs[key] = icon;
+        }
       });
+
+      return svgs;
     }
 
     function displayResults() {
