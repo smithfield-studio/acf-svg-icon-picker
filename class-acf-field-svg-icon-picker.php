@@ -130,12 +130,11 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function render_field($field)
 	{
-		$input_icon	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-		$icon		= [];
-		$button_ui	= '<span>&plus;</span>';
+		$saved_value	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
+		$icon			= !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
+		$button_ui		= '<span>&plus;</span>';
 
-		if (!empty($input_icon) && !empty($this->svgs[$input_icon])) {
-			$icon		= $this->svgs[$input_icon];
+		if (!empty($saved_value) && !empty($icon)) {
 			$svg_exists	= !empty($icon['path']) ? file_exists($icon['path']) : false;
 			$button_ui	= $svg_exists ? "<img src='{$icon['url']}' alt=''/>" : $button_ui;
 		}
@@ -147,7 +146,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 				</div>
 				<input type="hidden" readonly
 					name="<?php echo esc_attr($field['name']); ?>"
-					value="<?php echo esc_attr($input_icon); ?>" />
+					value="<?php echo esc_attr($saved_value); ?>" />
 			</div>
 			<?php if (! $field['required']) { ?>
 				<button class="acf-svg-icon-picker__remove">
@@ -213,18 +212,44 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 
 		foreach ($found_files as $key => $file) {
 			$name	= explode('.', $file)[0];
-			$title	= ucwords(str_replace(['-', '_'], ' ', $name));
+			$legacy_key = str_replace(['-', '_'], ' ', $name);
+			$title	= ucwords($legacy_key);
 			$key	= sanitize_key($name);
 
 			$svg_files[$key] = [
-				'key'	=> $key,
-				'title'	=> $title,
-				'url'	=> esc_url("{$url}{$file}"),
-				'path'	=> "{$path}/{$file}",
+				'key'			=> $key,
+				'legacy_key'	=> $legacy_key,
+				'title'			=> $title,
+				'url'			=> esc_url("{$url}{$file}"),
+				'path'			=> "{$path}/{$file}",
 			];
 		}
 
 		return $svg_files;
 	}
+
+	/**
+	 * Get the icon data.
+	 *
+	 * @param string $key The icon key.
+	 */
+	private function get_icon_data(string $key): array
+	{
+		$icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
+
+		// if no icon found in array keys, check legacy_key field
+		if (empty($icon)) {
+			$icon = array_filter($this->svgs, function ($svg) use ($key) {
+				return $svg['legacy_key'] === $key;
+			});
+
+			if (empty($icon)) {
+				return [];
+			}
+
+			$icon = reset($icon);
+		}
+
+		return $icon;
+	}
 }
-?>
