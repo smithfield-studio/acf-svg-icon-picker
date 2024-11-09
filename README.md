@@ -32,8 +32,9 @@ If you're coming from the original ACF Icon Picker plugin, you can switch to thi
 1. Deactivate the old *ACF Icon Picker plugin*
 2. Install the *ACF SVG Icon Picker plugin* via Composer or manually
 3. Activate the *ACF SVG Icon Picker plugin*
-4. Go over your field configurations and change the field type from `icon-picker` to `svg_icon_picker` in the field settings. Be aware of the underscores in the field type name.
-5. Check if the field type is now available in your ACF field settings
+4. Configure your desired icon path via the new [filters](#filters). Remove any old filters in use: `acf_icon_path`, `acf_icon_url` or `acf_icon_path_suffix`.
+5. Go over your field configurations and change the field type from `icon-picker` to `svg_icon_picker` in the field settings. Be aware of the underscores in the field type name.
+6. Check if the field type is now available in your ACF field settings
 
 ## Usage of this plugin
 We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_icon_path_suffix` filter](#filters).
