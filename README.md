@@ -63,7 +63,7 @@ Use the below filters to override the default icon folder inside your theme.
 
 ```php
 // modify the path to the icons directory in your theme.
-add_filter('acf_icon_path_suffix', function () {
+add_filter('acf_svg_icon_picker_folder', function () {
   return 'resources/icons/';
 });
 ```
