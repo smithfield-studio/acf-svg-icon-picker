@@ -91,6 +91,11 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ## Changelog
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
+* 4.0.1:
+  * Fix version numbers in constant.
+  * chore: Add files to export ignore 
+
+
 * 4.0.0:
   * Remove/deprecate legacy filters, refactor and simplify icon path filters by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
   * add unit tests, phpstan and return types by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
