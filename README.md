@@ -37,7 +37,7 @@ If you're coming from the original ACF Icon Picker plugin, you can switch to thi
 6. Check if the field type is now available in your ACF field settings
 
 ## Usage of this plugin
-We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_icon_path_suffix` filter](#filters).
+We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_svg_icon_picker_folder` filter](#filters).
 
 When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
 
