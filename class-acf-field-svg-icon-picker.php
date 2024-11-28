@@ -2,6 +2,8 @@
 
 /**
  * Field class for the SVG Icon Picker field.
+ *
+ * @package Advanced Custom Fields: SVG Icon Picker
  */
 
 namespace SmithfieldStudio\AcfSvgIconPicker;
@@ -15,8 +17,6 @@ if (! defined('ABSPATH')) {
  */
 class ACF_Field_Svg_Icon_Picker extends \acf_field
 {
-
-
 	/**
 	 * Controls field type visibility in REST requests.
 	 *
@@ -26,21 +26,29 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 
 	/**
 	 * Stores the path suffix to the icons.
+	 *
+	 * @var strin $path_suffix The path suffix to the icons.
 	 */
 	private string $path_suffix;
 
 	/**
 	 * Stores the path to the icons.
+	 *
+	 * @var string $path The path to the icons.
 	 */
 	private string $path;
 
 	/**
 	 * Stores the url to the icons.
+	 *
+	 * @var string $url The url to the icons.
 	 */
 	private string $url;
 
 	/**
 	 * Stores the icons.
+	 *
+	 * @var array $svgs The icons, stored as an array.
 	 */
 	public array $svgs = [];
 
@@ -54,12 +62,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		$this->name        = 'svg_icon_picker';
 		$this->label       = __('SVG Icon Picker', 'acf-svg-icon-picker');
 		$this->category    = 'content';
-		$this->defaults    = ['initial_value' => ''];
+		$this->defaults    = [
+			'initial_value' => '',
+			'return_format' => 'value',
+		];
 		$this->l10n        = ['error' => __('Error!', 'acf-svg-icon-picker')];
 		$this->url         = get_stylesheet_directory_uri();
 		$this->path_suffix = apply_filters('acf_svg_icon_picker_folder', 'icons/');
 		$this->path_suffix = apply_filters_deprecated('acf_icon_path_suffix', [$this->path_suffix], '4.0.0', 'acf_svg_icon_picker_folder');
-
 
 		apply_filters_deprecated('acf_icon_path', [''], '4.0.0', '', 'acf_icon_path filter is no longer in use, please check the docs of ACF SVG Icon Picker Field') . $this->path_suffix;
 		apply_filters_deprecated('acf_icon_url', [''], '4.0.0', '', 'acf_icon_url filter is no longer in use, please check the docs of ACF SVG Icon Picker Field') . $this->path_suffix;
@@ -77,7 +87,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 * Method that checks if the custom icon location is set by filter.
 	 * If it is, it sets the path and url to the custom location and collects the icons in that specific location.
 	 *
-	 * @throws \Exception if the path or url for the custom icon location are not set
+	 * @throws \Exception If the path or url for the custom icon location are not set.
 	 * @return array
 	 */
 	private function check_priority_dir(): array
@@ -89,7 +99,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		if (! is_array($priority_dir_settings) || ! isset($priority_dir_settings['path']) || ! isset($priority_dir_settings['url'])) {
-			_doing_it_wrong(__FUNCTION__, __('The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker'), '1.0.0');
+			_doing_it_wrong(__FUNCTION__, esc_attr__('The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker'), '1.0.0');
 			return [];
 		}
 
@@ -109,8 +119,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 
 		$parent_theme_path = get_template_directory() . '/' . $this->path_suffix;
 		$child_theme_path  = get_stylesheet_directory() . '/' . $this->path_suffix;
-		$parent_theme_url = get_template_directory_uri() . '/' . $this->path_suffix;
-		$child_theme_url  = get_stylesheet_directory_uri() . '/' . $this->path_suffix;
+		$parent_theme_url  = get_template_directory_uri() . '/' . $this->path_suffix;
+		$child_theme_url   = get_stylesheet_directory_uri() . '/' . $this->path_suffix;
 
 		$svgs = $this->svg_collector($parent_theme_path, $parent_theme_url);
 
@@ -130,14 +140,57 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function render_field($field): void
 	{
-		$saved_value	= '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-		$icon			= !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
+		$saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
+		$icon        = ! empty($saved_value) ? $this->get_icon_data($saved_value) : null;
 
-		$this->render_view('acf-field', [
-			'field'			=> $field,
-			'saved_value'	=> $saved_value,
-			'icon'			=> $icon,
-		]);
+		$this->render_view(
+			'acf-field',
+			[
+				'field'       => $field,
+				'saved_value' => $saved_value,
+				'icon'        => $icon,
+			]
+		);
+	}
+
+	/**
+	 * Render_field_settings()
+	 *
+	 * @param array<string, mixed> $field An array holding all the field's data.
+	 */
+	public function render_field_settings($field): void
+	{
+		acf_render_field_setting(
+			$field,
+			[
+				'label'        => __('Return Format', 'acf-svg-icon-picker'),
+				'instructions' => '',
+				'type'         => 'radio',
+				'name'         => 'return_format',
+				'choices'      => [
+					'id'   => __('Value', 'acf-svg-icon-picker'),
+					'icon' => __('Icon', 'acf-svg-icon-picker'),
+				],
+				'layout'       => 'horizontal',
+			]
+		);
+	}
+
+	/**
+	 * This filter is applied to the $value after it is loaded from the db and before it is returned to the template.
+	 *
+	 * @param mixed                $value          current value.
+	 * @param mixed                $post_id        The post id.
+	 * @param array<string, mixed> $field          The field array.
+	 * @return mixed                    $value we return.
+	 */
+	public function format_value(mixed $value, mixed $post_id, $field)
+	{
+		if ('icon' === $field['return_format'] && ! empty($value)) {
+			return get_svg_icon($value);
+		}
+
+		return $value;
 	}
 
 	/**
@@ -195,17 +248,17 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		foreach ($found_files as $key => $file) {
-			$name	= explode('.', $file)[0];
+			$name       = explode('.', $file)[0];
 			$legacy_key = str_replace(['-', '_'], ' ', $name);
-			$title	= ucwords($legacy_key);
-			$key	= sanitize_key($name);
+			$title      = ucwords($legacy_key);
+			$key        = sanitize_key($name);
 
 			$svg_files[$key] = [
-				'key'			=> $key,
-				'legacy_key'	=> $legacy_key,
-				'title'			=> $title,
-				'url'			=> esc_url("{$url}{$file}"),
-				'path'			=> "{$path}/{$file}",
+				'key'        => $key,
+				'legacy_key' => $legacy_key,
+				'title'      => $title,
+				'url'        => esc_url("{$url}{$file}"),
+				'path'       => "{$path}/{$file}",
 			];
 		}
 
@@ -219,13 +272,16 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 */
 	public function get_icon_data(string $key): array
 	{
-		$icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
+		$icon = ! empty($this->svgs[$key]) ? $this->svgs[$key] : [];
 
 		// if no icon found in array keys, check legacy_key field
 		if (empty($icon)) {
-			$icon = array_filter($this->svgs, function ($svg) use ($key) {
-				return $svg['legacy_key'] === $key;
-			});
+			$icon = array_filter(
+				$this->svgs,
+				function ($svg) use ($key) {
+					return $svg['legacy_key'] === $key;
+				}
+			);
 
 			if (empty($icon)) {
 				return [];
@@ -241,13 +297,13 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 	 * Render a php/html view.
 	 *
 	 * @param string $view The view to render.
-	 * @param array $data The data to pass to the view.
+	 * @param array  $data The data to pass to the view.
 	 */
 	private function render_view(string $view, array $data)
 	{
 		// @phpstan-ignore constant.notFound
 		$plugin_path = ACF_SVG_ICON_PICKER_PATH;
-		$path = "{$plugin_path}resources/views/{$view}.php";
+		$path        = "{$plugin_path}resources/views/{$view}.php";
 
 		if (! file_exists($path)) {
 			return;
