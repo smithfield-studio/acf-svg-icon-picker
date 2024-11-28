@@ -161,7 +161,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 					'close'    => esc_html__('close', 'acf-svg-icon-picker'),
 					'filter'   => esc_html__('Start typing to filter icons', 'acf-svg-icon-picker'),
 					// translators: %s: path_suffix
-					'no_icons' => sprintf(esc_html__('To add icons, add your svg files in the /%s folder in your theme.', 'acf-svg-icon-picker'), $this->path_suffix),
+					'no_icons' => sprintf(__('To add icons, add your svg files in the <code>/%s</code> folder in your theme.', 'acf-svg-icon-picker'), esc_attr($this->path_suffix)),
 				],
 			]
 		);
