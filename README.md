@@ -47,6 +47,10 @@ You can configure this field to output the icon name or the icon SVG markup. You
 We provide helper functions to fetch icons from the theme folder, without it mattering if the icon is stored in the parent or child theme.
 
 ```php
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri;
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path;
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon;
+
 $my_icon_field = get_field('my_icon_field');
 
 // Get the icon URL
