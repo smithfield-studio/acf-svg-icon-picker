@@ -168,8 +168,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 				'type'         => 'radio',
 				'name'         => 'return_format',
 				'choices'      => [
-					'id'   => __('Value', 'acf-svg-icon-picker'),
-					'icon' => __('Icon', 'acf-svg-icon-picker'),
+					'value'   => __('Value', 'acf-svg-icon-picker'),
+					'icon'    => __('Icon', 'acf-svg-icon-picker'),
 				],
 				'layout'       => 'horizontal',
 			]
