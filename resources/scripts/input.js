@@ -13,12 +13,7 @@
 
       renderPopup();
 
-      // count amount of items in object
-      const count = Object.keys(acfSvgIconPicker.svgs).length;
-
-      if (count > 0) {
-        renderIconsList();
-      }
+      renderIconsList();
 
       setupFilter();
 

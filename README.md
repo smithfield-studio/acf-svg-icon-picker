@@ -41,10 +41,16 @@ We recommend storing your SVG icons in a folder within your theme. This plugin d
 
 When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
 
+You can configure this field to output the icon name or the icon SVG markup. You can set this in the field settings by changing the `return_format`.
+
 ### Helper functions
 We provide helper functions to fetch icons from the theme folder, without it mattering if the icon is stored in the parent or child theme.
 
 ```php
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri;
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path;
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon;
+
 $my_icon_field = get_field('my_icon_field');
 
 // Get the icon URL
@@ -84,7 +90,8 @@ add_filter('acf_svg_icon_picker_custom_location', function () {
 
 ```php
 $fields->addField('my_icon', 'svg_icon_picker', [
-    'label' => 'My Icon',
+    'label'         => 'My Icon',
+    'return_format' => 'value', // or 'icon'
 ])
 ```
 

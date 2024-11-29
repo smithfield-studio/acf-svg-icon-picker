@@ -15,6 +15,7 @@
   height: 50px;
   color: #aaa;
   font-weight: 300;
+  overflow: hidden;
   font-size: 20px;
   user-select: none;
 }
@@ -25,8 +26,13 @@
 
 .acf-svg-icon-picker__icon {
   padding: 15px;
+  background: 0;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  text-align: center;
 }
 
 .acf-svg-icon-picker__icon img {
@@ -100,7 +106,12 @@
 .acf-svg-icon-picker__popup-close {
   padding: 0;
   border: none;
+  cursor: pointer;
   background-color: transparent;
+}
+
+.acf-svg-icon-picker__popup-contents{
+  padding: 20px;
 }
 
 .acf-svg-icon-picker__popup ul {
@@ -108,7 +119,6 @@
   position: relative;
   grid-template-columns: repeat(var(--acfsip-columns, 4), calc(25% - var(--acfsip-spacing)));
   gap: var(--acfsip-spacing);
-  padding: 20px;
 }
 
 .acf-svg-icon-picker__popup ul li {
