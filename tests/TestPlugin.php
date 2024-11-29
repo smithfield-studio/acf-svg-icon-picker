@@ -43,7 +43,7 @@ class TestPlugin extends \WP_UnitTestCase
 		switch_theme('test-theme');
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
 		$this->assertEquals(5, $count);
@@ -59,12 +59,11 @@ class TestPlugin extends \WP_UnitTestCase
 		switch_theme('test-child-theme');
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
 		$this->assertEquals(6, $count);
 	}
-
 
 	/**
 	 * Test if the plugin collects the SVG files from the parent theme and the child theme and if the correct paths are used.
@@ -74,7 +73,7 @@ class TestPlugin extends \WP_UnitTestCase
 		switch_theme('test-child-theme');
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 
 		// exists in both child and parent theme, thus child theme should be used
 		$discord = $svgs['discord'];
@@ -97,7 +96,7 @@ class TestPlugin extends \WP_UnitTestCase
 		});
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
@@ -149,7 +148,7 @@ class TestPlugin extends \WP_UnitTestCase
 		});
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
@@ -159,7 +158,6 @@ class TestPlugin extends \WP_UnitTestCase
 			return 'custom-icons/';
 		});
 	}
-
 
 	/**
 	 * Test if the _doing_it_wrong() function is called when the custom location filter is not used correctly.
@@ -173,7 +171,7 @@ class TestPlugin extends \WP_UnitTestCase
 		});
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 		$this->setExpectedIncorrectUsage('check_priority_dir');
 	}
 
@@ -187,12 +185,12 @@ class TestPlugin extends \WP_UnitTestCase
 		add_filter('acf_svg_icon_picker_custom_location', function () {
 			return [
 				'path' => WP_CONTENT_DIR . '/random-location-icons/',
-				'url' =>  content_url() . '/random-location-icons/',
+				'url'  => content_url() . '/random-location-icons/',
 			];
 		});
 
 		$plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-		$svgs = $plugin->svgs;
+		$svgs   = $plugin->svgs;
 
 		$this->assertNotEmpty($svgs);
 		$count = count($svgs);
@@ -207,16 +205,93 @@ class TestPlugin extends \WP_UnitTestCase
 	 */
 	public function test_legacy_keys_still_find_icons()
 	{
-        switch_theme('test-theme');
+		switch_theme('test-theme');
 
-        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-        $icon_key = 'thunder-storm';
-        $legacy_icon_key = 'thunder storm';
+		$plugin          = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+		$icon_key        = 'thunder-storm';
+		$legacy_icon_key = 'thunder storm';
 
-        $icon = $plugin->get_icon_data($icon_key);
-        $this->assertNotEmpty($icon);
+		$icon = $plugin->get_icon_data($icon_key);
+		$this->assertNotEmpty($icon);
 
-        $legacy_icon = $plugin->get_icon_data($legacy_icon_key);
-        $this->assertNotEmpty($legacy_icon);
+		$legacy_icon = $plugin->get_icon_data($legacy_icon_key);
+		$this->assertNotEmpty($legacy_icon);
+	}
+
+	public function testACFFieldSaveAndReturnValue()
+	{
+		// create a new field group
+		acf_add_local_field_group([
+			'key'      => 'group_svg_icon_picker',
+			'title'    => 'SVG Icon Picker',
+			'fields'   => [
+				[
+					'key'           => 'field_svg_icon_picker',
+					'label'         => 'SVG Icon Picker',
+					'name'          => 'svg_icon_picker',
+					'return_format' => 'value',
+					'type'          => 'svg_icon_picker',
+				],
+			],
+			'location' => [
+				[
+					[
+						'param'    => 'post_type',
+						'operator' => '==',
+						'value'    => 'post',
+					],
+				],
+			],
+		]);
+
+		// create a new post
+		$post_id = $this->factory->post->create();
+
+		// set the field value
+		update_field('svg_icon_picker', 'bell', $post_id);
+
+		// get the field value
+		$field_value = get_field('svg_icon_picker', $post_id);
+		$this->assertEquals('bell', $field_value);
+	}
+
+	public function testACFFieldSaveAndReturnSVG()
+	{
+		switch_theme('test-theme');
+		// create a new field group
+		acf_add_local_field_group([
+			'key'      => 'group_svg_icon_picker_2',
+			'title'    => 'SVG Icon Picker',
+			'fields'   => [
+				[
+					'key'           => 'field_svg_icon_picker_svg_test',
+					'label'         => 'SVG Icon Picker',
+					'name'          => 'svg_icon_picker',
+					'return_format' => 'icon',
+					'type'          => 'svg_icon_picker',
+				],
+			],
+			'location' => [
+				[
+					[
+						'param'    => 'post_type',
+						'operator' => '==',
+						'value'    => 'post',
+					],
+				],
+			],
+		]);
+
+		// create a new post
+		$post_id = $this->factory->post->create();
+
+		// set the field value
+		update_field('field_svg_icon_picker_svg_test', 'discord', $post_id);
+
+		// get file in /assets/themes/test-theme/icons/discord.svg
+		$discord_svg = file_get_contents(WP_CONTENT_DIR . '/themes/test-theme/icons/discord.svg');
+
+		$field_value = get_field('field_svg_icon_picker_svg_test', $post_id);
+		$this->assertEquals($discord_svg, $field_value);
 	}
 }
