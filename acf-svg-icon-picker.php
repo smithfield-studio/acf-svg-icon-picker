@@ -4,7 +4,7 @@
  * Plugin Name: Advanced Custom Fields: SVG Icon Picker
  * Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * Description: Allows you to pick an icon from a predefined list
- * Version: 4.0.1
+ * Version: 4.1.0
  * Author: Smithfield & Studio Lemon
  * Author URI: https://github.com/smithfield-studio/acf-svg-icon-picker/
  * Text Domain: acf-svg-icon-picker
@@ -25,7 +25,7 @@ defined('ABSPATH') || exit;
  * Change this version number and the version in the
  * docblock above when releasing a new version of this plugin.
  */
-define('ACF_SVG_ICON_PICKER_VERSION', '4.0.1');
+define('ACF_SVG_ICON_PICKER_VERSION', '4.1.0');
 
 define('ACF_SVG_ICON_PICKER_URL', plugin_dir_url(__FILE__));
 define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));

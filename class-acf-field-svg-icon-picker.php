@@ -99,7 +99,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 		}
 
 		if (! is_array($priority_dir_settings) || ! isset($priority_dir_settings['path']) || ! isset($priority_dir_settings['url'])) {
-			_doing_it_wrong(__FUNCTION__, esc_attr__('The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker'), '1.0.0');
+			_doing_it_wrong(__FUNCTION__, esc_attr__('The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker'), '4.0.0');
 			return [];
 		}
 
@@ -167,11 +167,11 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
 				'instructions' => '',
 				'type'         => 'radio',
 				'name'         => 'return_format',
+				'layout'       => 'horizontal',
 				'choices'      => [
 					'value'   => __('Value', 'acf-svg-icon-picker'),
 					'icon'    => __('Icon', 'acf-svg-icon-picker'),
 				],
-				'layout'       => 'horizontal',
 			]
 		);
 	}
