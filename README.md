@@ -101,7 +101,7 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 * 4.1.0:
   * feat: Add possebility to directly return the icon markup from the field by using the `icon` return format
   * feat: Enhance markup of the icon picker modal and field.
-  * docs: Update hooks in readme to the correct ones
+  * docs: Update hooks in readme to the correct ones by @huubl in https://github.com/smithfield-studio/acf-svg-icon-picker/pull/29
   * test: Add tests for the new return format
   * ci: Run PHPCS on PRs
 
