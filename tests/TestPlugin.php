@@ -127,10 +127,25 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertEquals('', $icon_uri);
 	}
 
-	public function test_get_svg_icon_herlper_function()
+	public function test_get_svg_icon_helper_function()
 	{
 		switch_theme('test-child-theme');
 		$icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('amazon');
+		$this->assertStringContainsString('<svg', $icon);
+	}
+
+
+	public function test_get_svg_icon_helper_function_custom_path()
+	{
+		switch_theme('test-child-theme');
+		add_filter('acf_svg_icon_picker_custom_location', function () {
+			return [
+				'path' => WP_CONTENT_DIR . '/random-location-icons/',
+				'url'  => content_url() . '/random-location-icons/',
+			];
+		});
+
+		$icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('bell');
 		$this->assertStringContainsString('<svg', $icon);
 	}
 
