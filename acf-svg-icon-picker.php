@@ -4,7 +4,7 @@
  * Plugin Name: Advanced Custom Fields: SVG Icon Picker
  * Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * Description: Allows you to pick an icon from a predefined list
- * Version: 4.1.0
+ * Version: 4.2.0
  * Author: Smithfield & Studio Lemon
  * Author URI: https://github.com/smithfield-studio/acf-svg-icon-picker/
  * Text Domain: acf-svg-icon-picker
@@ -25,7 +25,7 @@ defined('ABSPATH') || exit;
  * Change this version number and the version in the
  * docblock above when releasing a new version of this plugin.
  */
-define('ACF_SVG_ICON_PICKER_VERSION', '4.1.0');
+define('ACF_SVG_ICON_PICKER_VERSION', '4.2.0');
 
 define('ACF_SVG_ICON_PICKER_URL', plugin_dir_url(__FILE__));
 define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));
@@ -74,15 +74,21 @@ function get_svg_icon_uri(string $icon_name): string
  */
 function get_svg_icon_path(string $icon_name): string
 {
-	$location = apply_filters('acf_svg_icon_picker_folder', 'icons/');
+	$priority_dir_settings = apply_filters('acf_svg_icon_picker_custom_location', false);
 
-	$path = get_theme_file_path("{$location}{$icon_name}.svg");
+	if ($priority_dir_settings) {
+		$file_path = $priority_dir_settings['path'] ?? '';
+		$file_path = trailingslashit($file_path) . $icon_name . '.svg';
+	} else {
+		$path      = apply_filters('acf_svg_icon_picker_folder', 'icons/');
+		$file_path = get_theme_file_path("{$path}{$icon_name}.svg");
+	}
 
-	if (! file_exists($path)) {
+	if (! file_exists($file_path)) {
 		return '';
 	}
 
-	return $path;
+	return $file_path;
 }
 
 /**

@@ -98,6 +98,9 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ## Changelog
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
+* 4.2.0:
+  * fix: get_svg_icon_path() helper function now returns the correct path when using the custom location filter
+
 * 4.1.0:
   * feat: Add possebility to directly return the icon markup from the field by using the `icon` return format
   * feat: Enhance markup of the icon picker modal and field.
