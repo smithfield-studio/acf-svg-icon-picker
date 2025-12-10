@@ -43,7 +43,7 @@ function include_field_types(): void
 	acf_register_field_type('SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker');
 }
 
-add_action('init', __NAMESPACE__ . '\\include_field_types');
+add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
 
 
 /**
