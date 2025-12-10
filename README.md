@@ -98,6 +98,11 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ## Changelog
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
+* 4.3.0:
+  * enhancement: Change action hook for field type registration by @EarthmanWeb in #37
+  * test: Update GitHub Actions workflows to use latest PHP versions
+
+
 * 4.2.0:
   * fix: get_svg_icon_path() helper function now returns the correct path when using the custom location filter
 
