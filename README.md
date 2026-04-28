@@ -1,5 +1,5 @@
 [![Latest Stable Version](https://img.shields.io/packagist/v/smithfield-studio/acf-svg-icon-picker.svg?style=flat-square)](https://packagist.org/packages/smithfield-studio/acf-svg-icon-picker)
-[![PHP unit tests](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)]([https://github.com//timber/timber/actions/workflows/php-unit-tests.yml?query=branch:2.x](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main))
+[![PHP unit tests](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)](<[https://github.com//timber/timber/actions/workflows/php-unit-tests.yml?query=branch:2.x](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)>)
 
 # ACF SVG Icon Picker Field
 
@@ -19,24 +19,28 @@ This ACF field type is compatible with:
 ## Installation
 
 ### via Composer
+
 Run `composer require smithfield-studio/acf-svg-icon-picker` and activate the plugin via the plugins admin page.
 
 ### Manually
+
 1. Copy the `acf-svg-icon-picker` folder into your `wp-content/plugins` folder
 2. Activate the plugin
 3. Create a new ACF field and select the SVG Icon Picker type
 
 ## Switch from the legacy 'ACF Icon Picker' to 'ACF SVG Icon Picker'
+
 If you're coming from the original ACF Icon Picker plugin, you can switch to this plugin by following these steps:
 
-1. Deactivate the old *ACF Icon Picker plugin*
-2. Install the *ACF SVG Icon Picker plugin* via Composer or manually
-3. Activate the *ACF SVG Icon Picker plugin*
+1. Deactivate the old _ACF Icon Picker plugin_
+2. Install the _ACF SVG Icon Picker plugin_ via Composer or manually
+3. Activate the _ACF SVG Icon Picker plugin_
 4. Configure your desired icon path via the new [filters](#filters). Remove any old filters in use: `acf_icon_path`, `acf_icon_url` or `acf_icon_path_suffix`.
 5. Go over your field configurations and change the field type from `icon-picker` to `svg_icon_picker` in the field settings. Be aware of the underscores in the field type name.
 6. Check if the field type is now available in your ACF field settings
 
 ## Usage of this plugin
+
 We recommend storing your SVG icons in a folder within your theme. This plugin defaults to looking for icons inside the `icons/` folder of your theme. You can change this path by using the [`acf_svg_icon_picker_folder` filter](#filters).
 
 When using this plugin in conjunction with a parent/child theme, you can store your icons in the parent theme and use the child theme to override the path to the icons. This way, you can provide a set of icons in the parent theme and still allow the child theme to override them.
@@ -44,6 +48,7 @@ When using this plugin in conjunction with a parent/child theme, you can store y
 You can configure this field to output the icon name or the icon SVG markup. You can set this in the field settings by changing the `return_format`.
 
 ### Helper functions
+
 We provide helper functions to fetch icons from the theme folder, without it mattering if the icon is stored in the parent or child theme.
 
 ```php
@@ -96,50 +101,57 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ```
 
 ## Changelog
+
 [See releases for the full changelog](https://github.com/smithfield-studio/acf-svg-icon-picker/releases)
 
-* 4.3.0:
-  * enhancement: Change action hook for field type registration by @EarthmanWeb in #37
-  * test: Update GitHub Actions workflows to use latest PHP versions
+- 4.3.1:
+  - fix: Fix z-index of the modal to ensure it appears above all other elements, co-authored by @adambichler in #38
+  - ci: Update GitHub Actions workflows to use latest PHP versions
 
+- 4.3.0:
+  - enhancement: Change action hook for field type registration by @EarthmanWeb in #37
+  - test: Update GitHub Actions workflows to use latest PHP versions
 
-* 4.2.0:
-  * fix: get_svg_icon_path() helper function now returns the correct path when using the custom location filter
+- 4.2.0:
+  - fix: get_svg_icon_path() helper function now returns the correct path when using the custom location filter
 
-* 4.1.0:
-  * feat: Add possebility to directly return the icon markup from the field by using the `icon` return format
-  * feat: Enhance markup of the icon picker modal and field.
-  * docs: Update hooks in readme to the correct ones by @huubl in https://github.com/smithfield-studio/acf-svg-icon-picker/pull/29
-  * test: Add tests for the new return format
-  * ci: Run PHPCS on PRs
+- 4.1.0:
+  - feat: Add possebility to directly return the icon markup from the field by using the `icon` return format
+  - feat: Enhance markup of the icon picker modal and field.
+  - docs: Update hooks in readme to the correct ones by @huubl in https://github.com/smithfield-studio/acf-svg-icon-picker/pull/29
+  - test: Add tests for the new return format
+  - ci: Run PHPCS on PRs
 
-* 4.0.1:
-  * Fix version numbers in constant.
-  * chore: Add files to export ignore 
+- 4.0.1:
+  - Fix version numbers in constant.
+  - chore: Add files to export ignore
 
+- 4.0.0:
+  - Remove/deprecate legacy filters, refactor and simplify icon path filters by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
+  - add unit tests, phpstan and return types by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
+  - add better support for hashed assets by [@mike-sheppard](https://github.com/mike-sheppard) in [#26](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/26)
+- 3.1.4: Fix filter on filenames with diacritical marks by [@Rvervuurt](https://github.com/Rvervuurt) in [#21](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/21)
+- 3.1.3: Added MutationObserver by [@chrisbakr](https://github.com/chrisbakr) in [#20](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/20)
+- 3.1.2: Add debounce to improve filter performance by [@stefanmomm](https://github.com/stefanmomm) in [#17](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/17)
+- 3.1.1: Optimize css by [@stefanmomm](https://github.com/stefanmomm) in [#16](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/16)
+- 3.1.0: Changed name of field to `svg_icon_picker` to avoid conflicts with vanilla ACF Icon Picker field.
+- 3.0.0: Revert to original ACF field name, quick tidy + README updates
+- 2.0.0: Fix for ACF 6.3 which now has an official icon-picker field + merged open PRs from [@Levdbas](https://github.com/Levdbas) in [#38](https://github.com/houke/acf-icon-picker/pull/38) & [@phschmanau](https://github.com/phschmanau) in [#37](https://github.com/houke/acf-icon-picker/pull/37)
 
-* 4.0.0:
-  * Remove/deprecate legacy filters, refactor and simplify icon path filters by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
-  * add unit tests, phpstan and return types by [@Levdbas](https://github.com/Levdbas) in [#25](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/25)
-  * add better support for hashed assets by [@mike-sheppard](https://github.com/mike-sheppard) in [#26](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/26)
-* 3.1.4: Fix filter on filenames with diacritical marks by [@Rvervuurt](https://github.com/Rvervuurt) in [#21](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/21)
-* 3.1.3: Added MutationObserver by [@chrisbakr](https://github.com/chrisbakr) in [#20](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/20)
-* 3.1.2: Add debounce to improve filter performance by [@stefanmomm](https://github.com/stefanmomm) in [#17](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/17)
-* 3.1.1: Optimize css by [@stefanmomm](https://github.com/stefanmomm) in [#16](https://github.com/smithfield-studio/acf-svg-icon-picker/pull/16)
-* 3.1.0: Changed name of field to `svg_icon_picker` to avoid conflicts with vanilla ACF Icon Picker field.
-* 3.0.0: Revert to original ACF field name, quick tidy + README updates
-* 2.0.0: Fix for ACF 6.3 which now has an official icon-picker field + merged open PRs from [@Levdbas](https://github.com/Levdbas) in [#38](https://github.com/houke/acf-icon-picker/pull/38) & [@phschmanau](https://github.com/phschmanau) in [#37](https://github.com/houke/acf-icon-picker/pull/37)
 ---
-* **Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker)**
+
+- **Forked from [houke/acf-icon-picker](https://github.com/houke/acf-icon-picker)**
+
 ---
-* 1.9.1: ACF 6 compatibility fix. Thanks to [@idflood](https://github.com/idflood) in [#30](https://github.com/houke/acf-icon-picker/pull/30)
-* 1.9.0: Fix issue with Gutenberg preview not updating when removing. Thanks to [@cherbst](https://github.com/cherbst) in [#23](https://github.com/houke/acf-icon-picker/pull/23)
-* 1.8.0: Fix issue with Gutenberg not saving icon. Thanks to [@tlewap](https://github.com/tlewap) in [#17](https://github.com/houke/acf-icon-picker/pull/17)
-* 1.7.0: 2 new filters for more control over icon path. Thanks to [@benjibee](https://github.com/benjibee) in [#11](https://github.com/houke/acf-icon-picker/pull/11)
-* 1.6.0: Performance fix with lots of icons. Thanks to [@idflood](https://github.com/idflood) in [#9](https://github.com/houke/acf-icon-picker/pull/9)
-* 1.5.0: Fix issue where searching for icons would break preview if icon name has space
-* 1.4.0: Add filter to change folder where svg icons are stored
-* 1.3.0: Adding close option on modal
-* 1.2.0: Adding search filter input to filter through icons by name
-* 1.1.0: Add button to remove the selected icon when the field is not required
-* 1.0.0: First release
+
+- 1.9.1: ACF 6 compatibility fix. Thanks to [@idflood](https://github.com/idflood) in [#30](https://github.com/houke/acf-icon-picker/pull/30)
+- 1.9.0: Fix issue with Gutenberg preview not updating when removing. Thanks to [@cherbst](https://github.com/cherbst) in [#23](https://github.com/houke/acf-icon-picker/pull/23)
+- 1.8.0: Fix issue with Gutenberg not saving icon. Thanks to [@tlewap](https://github.com/tlewap) in [#17](https://github.com/houke/acf-icon-picker/pull/17)
+- 1.7.0: 2 new filters for more control over icon path. Thanks to [@benjibee](https://github.com/benjibee) in [#11](https://github.com/houke/acf-icon-picker/pull/11)
+- 1.6.0: Performance fix with lots of icons. Thanks to [@idflood](https://github.com/idflood) in [#9](https://github.com/houke/acf-icon-picker/pull/9)
+- 1.5.0: Fix issue where searching for icons would break preview if icon name has space
+- 1.4.0: Add filter to change folder where svg icons are stored
+- 1.3.0: Adding close option on modal
+- 1.2.0: Adding search filter input to filter through icons by name
+- 1.1.0: Add button to remove the selected icon when the field is not required
+- 1.0.0: First release
