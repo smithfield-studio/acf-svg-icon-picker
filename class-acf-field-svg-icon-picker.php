@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
+
 	/**
 	 * Controls field type visibility in REST requests.
 	 *
@@ -27,7 +28,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 	/**
 	 * Stores the path suffix to the icons.
 	 *
-	 * @var strin $path_suffix The path suffix to the icons.
+	 * @var string $path_suffix The path suffix to the icons.
 	 */
 	private string $path_suffix;
 
