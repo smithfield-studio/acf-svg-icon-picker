@@ -152,13 +152,13 @@ function get_svg_icon_path(string $icon_name): string {
  * honouring `group_by_subdir`. Returns null when the icon is not found.
  *
  * @internal
- * @param array<string, mixed> $location  Location config.
- * @param string               $icon_name Icon slug.
+ * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location  Location config.
+ * @param string                                                                                 $icon_name Icon slug.
  * @return array{path: string, url: string}|null
  */
 function resolve_icon_in_location(array $location, string $icon_name): ?array {
-    $base_path = rtrim($location['path'] ?? '', '/\\');
-    $base_url = trailingslashit($location['url'] ?? '');
+    $base_path = rtrim($location['path'], '/\\');
+    $base_url = trailingslashit($location['url']);
 
     if ('' === $base_path) {
         return null;

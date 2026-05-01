@@ -140,45 +140,6 @@ add_filter('acf_svg_icon_picker_custom_location', function () {
 
 `get_svg_icon_path()` and `get_svg_icon_uri()` understand subdir mode too — they look for the icon in the location's flat path first, then fall back to scanning each subfolder.
 
-### Customising the picker UI
-
-The picker exposes a small set of CSS custom properties so you can retune sizing and colours from your theme without overriding rules. Defaults shown:
-
-```css
-:root {
-  /* Generic */
-  --acfsip-border-radius: 4px;
-  --acfsip-spacing: 10px;
-  --acfsip-accent-color: #2271b1;        /* focus ring */
-
-  /* Trigger (round button next to the field label) */
-  --acfsip-trigger-size: 70px;
-  --acfsip-trigger-bg: #eee;
-  --acfsip-trigger-bg-hover: #ddd;
-
-  /* Popup */
-  --acfsip-popup-width: clamp(320px, 75vw, 1200px);
-  --acfsip-popup-height: clamp(400px, 75vh, 900px);
-  --acfsip-popup-bg: #fff;
-  --acfsip-popup-header-bg: #f4f4f4;
-  --acfsip-popup-backdrop: rgb(0 0 0 / 80%);
-
-  /* Icon grid */
-  --acfsip-tile-min-width: 120px;          /* drives auto-fill column count */
-  --acfsip-tile-icon-size: 50%;            /* image size relative to tile */
-  --acfsip-tile-bg-hover: #eee;
-}
-```
-
-Override at any specificity — for example, a wider popup just for one field group:
-
-```css
-.acf-field-group-my-icons .acf-svg-icon-picker__popup {
-  --acfsip-popup-width: clamp(600px, 90vw, 1600px);
-  --acfsip-tile-min-width: 96px;
-}
-```
-
 ### [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
 ```php
@@ -204,7 +165,7 @@ Then:
 
 ```bash
 composer test            # PHPUnit
-composer phpstan         # static analysis (level 5)
+composer phpstan         # static analysis (level 9)
 composer format          # mago — format PHP
 composer format:check    # mago — format check (used by CI)
 ```

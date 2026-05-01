@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   phpstan:
-    name: PHPStan (level 5)
+    name: PHPStan (level 9)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

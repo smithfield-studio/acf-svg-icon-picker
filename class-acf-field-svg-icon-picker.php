@@ -306,7 +306,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      */
     public function render_field($field): void {
         $saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-        $icon = !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
+        $icon = is_string($saved_value) && '' !== $saved_value ? $this->get_icon_data($saved_value) : null;
 
         $this->render_view('acf-field', [
             'field' => $field,
@@ -343,7 +343,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @return mixed                    $value we return.
      */
     public function format_value(mixed $value, mixed $post_id, $field) {
-        if ('icon' === $field['return_format'] && !empty($value)) {
+        if ('icon' === $field['return_format'] && is_string($value) && '' !== $value) {
             return get_svg_icon($value);
         }
 
