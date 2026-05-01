@@ -1,5 +1,6 @@
 (function () {
   let activeItemEl;
+  let activeAllowedGroups = null;
   let isOpen = false;
   let dialogEl = null;
 
@@ -15,6 +16,15 @@
           return;
         }
         activeItemEl = trigger.closest('.acf-svg-icon-picker__selector');
+        // Per-field group allowlist from the field wrapper. Empty/missing → show all.
+        const fieldWrapper = trigger.closest('.acf-svg-icon-picker');
+        const allowed = fieldWrapper ? fieldWrapper.getAttribute('data-allowed-groups') : '';
+        activeAllowedGroups = allowed
+          ? allowed
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : null;
         renderPopup();
         renderIconsList();
         setupFilter();
@@ -175,8 +185,23 @@
       return;
     }
 
+    // Per-field allowlist: when set, restrict groups to those keys, and flat-svgs
+    // mode to only icons that belong to one of the allowed groups.
+    const visibleGroups = Array.isArray(groups)
+      ? activeAllowedGroups
+        ? groups.filter((g) => activeAllowedGroups.includes(g.key))
+        : groups
+      : [];
+
+    const allowedKeySet = activeAllowedGroups
+      ? new Set(visibleGroups.flatMap((g) => g.icons || []))
+      : null;
+
     const needle = normalize(filter);
     const matches = (key) => {
+      if (allowedKeySet && !allowedKeySet.has(key)) {
+        return false;
+      }
       if (!needle) {
         return true;
       }
@@ -186,8 +211,8 @@
 
     let html = '';
 
-    if (Array.isArray(groups) && groups.length > 0) {
-      html = groups
+    if (visibleGroups.length > 0) {
+      html = visibleGroups
         .map((group) => {
           const matched = (group.icons || []).filter(matches);
           if (matched.length === 0) {

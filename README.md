@@ -149,6 +149,19 @@ $fields->addField('my_icon', 'svg_icon_picker', [
 ])
 ```
 
+### Limiting which groups appear per field
+
+When the custom-location filter declares groups, each field can opt to show only a subset via the `allowed_groups` setting (a list of group keys). Unset/empty = show all groups.
+
+```php
+$fields->addField('industry_icon', 'svg_icon_picker', [
+    'label'          => 'Industry icon',
+    'allowed_groups' => ['nucleo', 'ui'], // hide 'social', 'decorative', etc.
+])
+```
+
+In the WP admin field-editor UI, this appears as a checkbox group listing every available group; the setting is hidden when no groups are configured.
+
 ## Development
 
 ### Tests

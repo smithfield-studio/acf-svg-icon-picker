@@ -308,10 +308,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
         $icon = is_string($saved_value) && '' !== $saved_value ? $this->get_icon_data($saved_value) : null;
 
+        $allowed_groups = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
+            ? array_values(array_filter($field['allowed_groups'], 'is_string'))
+            : [];
+
         $this->render_view('acf-field', [
             'field' => $field,
             'saved_value' => $saved_value,
             'icon' => $icon,
+            'allowed_groups' => $allowed_groups,
         ]);
     }
 
@@ -332,6 +337,27 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 'icon' => __('Icon', 'acf-svg-icon-picker'),
             ],
         ]);
+
+        // Only render the group filter when groups are actually configured.
+        if (count($this->groups) > 0) {
+            $choices = [];
+            foreach ($this->groups as $group) {
+                $choices[$group['key']] = '' !== $group['name'] ? $group['name'] : $group['key'];
+            }
+
+            acf_render_field_setting($field, [
+                'label' => __('Allowed groups', 'acf-svg-icon-picker'),
+                'instructions' => __(
+                    'Limit the picker to these groups for this field. Leave empty to show all.',
+                    'acf-svg-icon-picker',
+                ),
+                'type' => 'checkbox',
+                'name' => 'allowed_groups',
+                'choices' => $choices,
+                'allow_null' => 1,
+                'layout' => 'horizontal',
+            ]);
+        }
     }
 
     /**

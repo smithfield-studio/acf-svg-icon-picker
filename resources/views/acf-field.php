@@ -1,4 +1,9 @@
-<div class="acf-svg-icon-picker">
+<div
+	class="acf-svg-icon-picker"
+	<?php if (!empty($allowed_groups)) { ?>
+		data-allowed-groups="<?php echo esc_attr(implode(',', $allowed_groups)); ?>"
+	<?php } ?>
+>
 	<div class="acf-svg-icon-picker__selector">
 		<button
 			type="button"
