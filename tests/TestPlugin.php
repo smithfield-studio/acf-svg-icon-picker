@@ -18,6 +18,19 @@ class TestPlugin extends \WP_UnitTestCase {
     protected $plugin_file;
 
     /**
+     * Reset every filter the test suite touches so each test starts from a
+     * clean slate. Avoids order-dependent flakes when one test's filter
+     * registration leaks into another (anonymous-closure remove_filter()
+     * calls can't reliably remove their own callbacks).
+     */
+    public function tearDown(): void {
+        remove_all_filters('acf_svg_icon_picker_custom_location');
+        remove_all_filters('acf_svg_icon_picker_folder');
+        remove_all_filters('acf_icon_path_suffix');
+        parent::tearDown();
+    }
+
+    /**
      * Test if the plugin is loaded.
      */
     public function test_plugin_class() {
@@ -158,9 +171,7 @@ class TestPlugin extends \WP_UnitTestCase {
         $count = count($svgs);
         $this->assertEquals(4, $count);
 
-        remove_filter('acf_icon_path_suffix', function () {
-            return 'custom-icons/';
-        });
+        // Filter is cleaned up by tearDown() — no need to remove it here.
     }
 
     /**
