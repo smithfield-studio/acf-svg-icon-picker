@@ -12,7 +12,7 @@ This ACF field type is compatible with:
 - [x] ACF 6
 - [x] ACF 5
 
-## Screenshots
+## Preview
 
 ![SVG Icon Picker Popup](/screenshots/example-popup.jpg)
 
