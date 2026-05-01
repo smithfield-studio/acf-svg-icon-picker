@@ -2,7 +2,6 @@
    higher specificity (e.g. on `:root` from your theme, or on the field
    wrapper for per-field tweaks). */
 :root {
-
   /* Generic */
   --acfsip-border-radius: 4px;
   --acfsip-spacing: 10px;
@@ -187,7 +186,7 @@
   overflow: hidden;
 }
 
-.acf-svg-icon-picker__popup-contents{
+.acf-svg-icon-picker__popup-contents {
   padding: 20px;
 }
 
@@ -218,7 +217,9 @@
 
   /* Square tiles for a tidy grid. Icon + label live within the square. */
   aspect-ratio: 1;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
   border: 0;
   border-radius: var(--acfsip-border-radius);
   background: transparent;
@@ -235,7 +236,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .acf-svg-icon-picker__option {
     transition: none;
   }
@@ -261,7 +261,6 @@
 }
 
 .acf-svg-icon-picker__option span {
-
   /* Cap to two lines so very long names don't break the square. */
   display: -webkit-box;
   -webkit-line-clamp: 2;

@@ -1,18 +1,16 @@
 {
-  "name": "acf-svg-icon-picker",
-  "private": true,
-  "description": "Dev tooling (lint/format) for the ACF SVG Icon Picker plugin.",
-  "scripts": {
-    "lint:js": "eslint resources/scripts",
-    "lint:js:fix": "eslint resources/scripts --fix",
-    "lint:css": "stylelint resources/styles/*.css",
-    "lint:css:fix": "stylelint resources/styles/*.css --fix",
-    "lint": "npm run lint:js && npm run lint:css"
-  },
-  "devDependencies": {
-    "@wordpress/eslint-plugin": "^22.0.0",
-    "@wordpress/stylelint-config": "^23.0.0",
-    "eslint": "^8.57.0",
-    "stylelint": "^16.0.0"
-  }
+    "name": "acf-svg-icon-picker",
+    "private": true,
+    "description": "Dev tooling (lint/format) for the ACF SVG Icon Picker plugin.",
+    "scripts": {
+        "format": "oxfmt",
+        "format:check": "oxfmt --check",
+        "lint": "oxlint",
+        "lint:fix": "oxlint --fix",
+        "check": "npm run format:check && npm run lint"
+    },
+    "devDependencies": {
+        "oxfmt": "^0.42.0",
+        "oxlint": "^1.57.0"
+    }
 }

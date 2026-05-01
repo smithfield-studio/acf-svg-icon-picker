@@ -18,8 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - New internal helper `normalize_custom_locations()` shared between the field class and helper functions.
 - New public property `$plugin->groups` exposing the grouping metadata.
 - Editor JS exposes `acfSvgIconPicker.groups` alongside the existing `svgs` data.
-- ESLint (`@wordpress/eslint-plugin`) and Stylelint (`@wordpress/stylelint-config`) configs + `npm run lint` scripts.
-- New `.github/workflows/code-quality.yml` running PHPStan, PHPCS, ESLint, and Stylelint on every push to `main` and PR (in addition to the existing PHPUnit workflow).
+- [Oxfmt](https://github.com/oxc-project/oxc) + [Oxlint](https://github.com/oxc-project/oxc) for JS / CSS / JSON formatting and JS linting (Rust-based, sub-second). Replaces ESLint + Stylelint.
+- [Mago](https://github.com/carthage-software/mago) (`carthage-software/mago`) for PHP formatting. Replaces PHPCS.
+- New `.github/workflows/code-quality.yml` running PHPStan, Mago format check, Oxfmt format check, and Oxlint on every push to `main` and PR (in addition to the existing PHPUnit workflow).
 - **CSS custom properties** for picker customisation: `--acfsip-trigger-size`, `--acfsip-popup-width`, `--acfsip-popup-height`, `--acfsip-tile-min-width`, `--acfsip-tile-icon-size`, `--acfsip-accent-color`, plus colour tokens for the trigger, popup, header, backdrop, and tile hover states. Themes can retune the picker without overriding rules.
 - **WP admin colour scheme integration** — `--acfsip-accent-color` defaults to `var(--wp-admin-theme-color, #2271b1)`, so the focus ring matches the user's chosen admin colour scheme.
 - **RTL support** — block-axis margins, paddings, and borders use logical properties (`margin-block-end`, `padding-inline`, `border-block-end`, `min-inline-size`) so right-to-left languages render correctly.
@@ -47,6 +48,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `.acf-svg-icon-picker__popup-overlay` wrapper element (replaced by native `<dialog>` + `::backdrop`). The previous z-index workaround is no longer necessary because dialogs opened with `showModal()` live in the browser's top-layer.
 - Internal `$path` and `$url` private properties on the field class — they were write-only after the multi-location refactor and provided no external value.
+- PHPCS, the 10up PHPCS ruleset, WPCS, and `phpcompatibility/php-compatibility` dev dependencies — replaced by Mago for PHP formatting.
+- ESLint and Stylelint dev dependencies — replaced by Oxfmt + Oxlint.
+- `.phpcs.xml.dist`, `.eslintrc.json`, and `.stylelintrc.json` config files (no longer used).
 
 ### Compatibility notes
 

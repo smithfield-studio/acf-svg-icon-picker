@@ -203,15 +203,15 @@ bash bin/install-wp-tests.sh wordpress_test root '' localhost latest
 Then:
 
 ```bash
-composer test       # PHPUnit
-composer phpstan    # static analysis (level 5)
-composer cs         # PHPCS — 10up + WPCS rulesets
-composer cs:fix     # auto-fix PHPCS violations
+composer test            # PHPUnit
+composer phpstan         # static analysis (level 5)
+composer format          # mago — format PHP
+composer format:check    # mago — format check (used by CI)
 ```
 
 ### JS / CSS code quality
 
-Vanilla JS and CSS are linted with ESLint (`@wordpress/eslint-plugin`) and Stylelint (`@wordpress/stylelint-config`). Install once:
+JS and CSS are formatted with [oxfmt](https://github.com/oxc-project/oxc) and JS is linted with [oxlint](https://github.com/oxc-project/oxc) (both Rust-based, very fast). Install once:
 
 ```bash
 npm install
@@ -220,14 +220,14 @@ npm install
 Then:
 
 ```bash
-npm run lint        # JS + CSS
-npm run lint:js
-npm run lint:js:fix
-npm run lint:css
-npm run lint:css:fix
+npm run format          # format JS, CSS, JSON
+npm run format:check    # check formatting (used by CI)
+npm run lint            # oxlint on JS
+npm run lint:fix        # auto-fix lint issues
+npm run check           # format:check + lint, run together
 ```
 
-CI runs the PHP test/static analysis suite via `.github/workflows/php-unit-tests.yml`.
+CI runs the full quality suite (`composer phpstan`, `composer format:check`, `npm run format -- --check`, `npm run lint`) on every push and PR via `.github/workflows/code-quality.yml`. The PHPUnit suite runs separately via `.github/workflows/php-unit-tests.yml`.
 
 ## Changelog
 

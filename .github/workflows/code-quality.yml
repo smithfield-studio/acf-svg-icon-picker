@@ -34,8 +34,8 @@ jobs:
       - name: Run PHPStan
         run: composer phpstan
 
-  phpcs:
-    name: PHPCS (10up + WPCS)
+  mago-format:
+    name: Mago format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -48,11 +48,11 @@ jobs:
 
       - uses: ramsey/composer-install@v4
 
-      - name: Run PHPCS
-        run: composer cs
+      - name: Run Mago format check
+        run: composer format:check
 
-  eslint:
-    name: ESLint
+  oxc:
+    name: Oxfmt + Oxlint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -66,23 +66,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint:js
+      - name: Run Oxfmt format check
+        run: npm run format -- --check
 
-  stylelint:
-    name: Stylelint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Stylelint
-        run: npm run lint:css
+      - name: Run Oxlint
+        run: npm run lint
