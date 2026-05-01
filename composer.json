@@ -1,6 +1,7 @@
 {
   "name": "smithfield-studio/acf-svg-icon-picker",
   "description": "Add ACF field for selecting SVG icons.",
+  "version": "4.4.0",
   "minimum-stability": "stable",
   "license": "MIT",
   "keywords": [
@@ -41,6 +42,9 @@
     "source": "https://github.com/smithfield-studio/acf-svg-icon-picker"
   },
   "type": "wordpress-plugin",
+  "require": {
+    "php": ">=8.1"
+  },
   "require-dev": {
     "wp-coding-standards/wpcs": "^3.1",
     "phpcompatibility/php-compatibility": "^9",

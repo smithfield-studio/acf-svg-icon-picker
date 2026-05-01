@@ -12,5 +12,6 @@ parameters:
         - tests/*
         - docs/*
         - vendor/*
+        - node_modules/*
         - wp-content/*
     ignoreErrors:
