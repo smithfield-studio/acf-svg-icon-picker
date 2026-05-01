@@ -15,8 +15,7 @@ if (!defined('ABSPATH')) {
 /**
  * Field class for the SVG Icon Picker field.
  */
-class ACF_Field_Svg_Icon_Picker extends \acf_field
-{
+class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Controls field type visibility in REST requests.
      *
@@ -52,8 +51,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * We set the field name, label, category, defaults and l10n.
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->name = 'svg_icon_picker';
         $this->label = __('SVG Icon Picker', 'acf-svg-icon-picker');
         $this->category = 'content';
@@ -103,8 +101,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * @return array
      */
-    private function check_priority_dir(): array
-    {
+    private function check_priority_dir(): array {
         $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
 
         if (false === $filter_result) {
@@ -191,8 +188,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      * @param array<string> $svgs     Reference: flat svgs dict (slug-keyed).
      * @param array<int>    $groups   Reference: groups list to append into.
      */
-    private function collect_subdir_groups(array $location, array &$svgs, array &$groups): void
-    {
+    private function collect_subdir_groups(array $location, array &$svgs, array &$groups): void {
         $base_path = rtrim($location['path'], '/\\');
         $base_url = trailingslashit($location['url']);
 
@@ -245,8 +241,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      * @param mixed $filter_result Raw value returned by the filter.
      * @return array<int, array<string, mixed>>
      */
-    private function normalize_locations(mixed $filter_result): array
-    {
+    private function normalize_locations(mixed $filter_result): array {
         if (!is_array($filter_result) || empty($filter_result)) {
             return [];
         }
@@ -277,8 +272,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * @return array
      */
-    private function check_theme_dirs(): array
-    {
+    private function check_theme_dirs(): array {
         $parent_theme_path = get_template_directory() . '/' . $this->path_suffix;
         $child_theme_path = get_stylesheet_directory() . '/' . $this->path_suffix;
         $parent_theme_url = get_template_directory_uri() . '/' . $this->path_suffix;
@@ -300,8 +294,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * @param array $field the field array
      */
-    public function render_field($field): void
-    {
+    public function render_field($field): void {
         $saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
         $icon = !empty($saved_value) ? $this->get_icon_data($saved_value) : null;
 
@@ -317,8 +310,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * @param array<string, mixed> $field An array holding all the field's data.
      */
-    public function render_field_settings($field): void
-    {
+    public function render_field_settings($field): void {
         acf_render_field_setting($field, [
             'label' => __('Return Format', 'acf-svg-icon-picker'),
             'instructions' => '',
@@ -340,8 +332,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      * @param array<string, mixed> $field          The field array.
      * @return mixed                    $value we return.
      */
-    public function format_value(mixed $value, mixed $post_id, $field)
-    {
+    public function format_value(mixed $value, mixed $post_id, $field) {
         if ('icon' === $field['return_format'] && !empty($value)) {
             return get_svg_icon($value);
         }
@@ -352,8 +343,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
     /**
      * Enqueue assets for the field.
      */
-    public function input_admin_enqueue_scripts(): void
-    {
+    public function input_admin_enqueue_scripts(): void {
         // @phpstan-ignore constant.notFound
         $url = ACF_SVG_ICON_PICKER_URL;
         wp_register_script(
@@ -399,8 +389,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      * @param string $path The path to the icons to scan for SVG files.
      * @param string $url The url to the icons.
      */
-    private function svg_collector(string $path, string $url): array
-    {
+    private function svg_collector(string $path, string $url): array {
         $svg_files = [];
         if (!is_dir($path)) {
             return [];
@@ -437,8 +426,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      *
      * @param string $key The icon key.
      */
-    public function get_icon_data(string $key): array
-    {
+    public function get_icon_data(string $key): array {
         $icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
 
         // if no icon found in array keys, check legacy_key field
@@ -463,8 +451,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field
      * @param string $view The view to render.
      * @param array  $data The data to pass to the view.
      */
-    private function render_view(string $view, array $data)
-    {
+    private function render_view(string $view, array $data) {
         // @phpstan-ignore constant.notFound
         $plugin_path = ACF_SVG_ICON_PICKER_PATH;
         $path = "{$plugin_path}resources/views/{$view}.php";

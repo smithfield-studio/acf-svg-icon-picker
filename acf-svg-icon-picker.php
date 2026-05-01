@@ -33,8 +33,7 @@ define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));
 /**
  * Include SVG Icon Picker field type.
  */
-function include_field_types(): void
-{
+function include_field_types(): void {
     if (!function_exists('acf_register_field_type')) {
         return;
     }
@@ -54,8 +53,7 @@ add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
  * @param  mixed $filter_result Raw value returned by the filter.
  * @return array<int, array<string, mixed>>
  */
-function normalize_custom_locations(mixed $filter_result): array
-{
+function normalize_custom_locations(mixed $filter_result): array {
     if (!is_array($filter_result) || empty($filter_result)) {
         return [];
     }
@@ -87,8 +85,7 @@ function normalize_custom_locations(mixed $filter_result): array
  * @param string $icon_name The name of the icon we want to get the URI for.
  * @return string The URI of the icon, empty string if the icon does not exist.
  */
-function get_svg_icon_uri(string $icon_name): string
-{
+function get_svg_icon_uri(string $icon_name): string {
     if ('' === get_svg_icon_path($icon_name)) {
         return '';
     }
@@ -114,8 +111,7 @@ function get_svg_icon_uri(string $icon_name): string
  * @param string $icon_name The name of the icon we want to get the path for.
  * @return string The path of the icon, empty string if the icon does not exist.
  */
-function get_svg_icon_path(string $icon_name): string
-{
+function get_svg_icon_path(string $icon_name): string {
     $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
 
     if (!empty($locations)) {
@@ -148,8 +144,7 @@ function get_svg_icon_path(string $icon_name): string
  * @param string               $icon_name Icon slug.
  * @return array{path: string, url: string}|null
  */
-function resolve_icon_in_location(array $location, string $icon_name): ?array
-{
+function resolve_icon_in_location(array $location, string $icon_name): ?array {
     $base_path = rtrim($location['path'] ?? '', '/\\');
     $base_url = trailingslashit($location['url'] ?? '');
 
@@ -194,8 +189,7 @@ function resolve_icon_in_location(array $location, string $icon_name): ?array
  * @param string $icon_name The name of the icon we want to get.
  * @return string The SVG icon file, empty string if the icon does not exist.
  */
-function get_svg_icon(string $icon_name): string
-{
+function get_svg_icon(string $icon_name): string {
     $path = get_svg_icon_path($icon_name);
 
     if (!$path) {
