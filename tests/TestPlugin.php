@@ -516,6 +516,40 @@ class TestPlugin extends \WP_UnitTestCase
 		$this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $path);
 	}
 
+	/**
+	 * Per-field allowed_groups: stored as an array of group keys.
+	 */
+	public function test_field_setting_allowed_groups_saves()
+	{
+		acf_add_local_field_group([
+			'key'      => 'group_svg_icon_picker_allowed',
+			'title'    => 'SVG Icon Picker (allowed groups)',
+			'fields'   => [
+				[
+					'key'            => 'field_svg_icon_picker_allowed',
+					'label'          => 'Icon',
+					'name'           => 'icon',
+					'type'           => 'svg_icon_picker',
+					'allowed_groups' => ['nucleo', 'social'],
+				],
+			],
+			'location' => [
+				[
+					[
+						'param'    => 'post_type',
+						'operator' => '==',
+						'value'    => 'post',
+					],
+				],
+			],
+		]);
+
+		$field = acf_get_field('field_svg_icon_picker_allowed');
+
+		$this->assertIsArray($field['allowed_groups']);
+		$this->assertSame(['nucleo', 'social'], $field['allowed_groups']);
+	}
+
 	public function testACFFieldSaveAndReturnSVG()
 	{
 		switch_theme('test-theme');

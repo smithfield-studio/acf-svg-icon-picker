@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Multiple icon locations** — `acf_svg_icon_picker_custom_location` now accepts a list of `{ path, url, name?, key? }` arrays. Locations render as named groups in the picker UI. Single `{ path, url }` shape remains supported (back-compatible).
 - **Auto-grouping by subdirectory** — set `'group_by_subdir' => true` on a single location to expose each top-level subfolder as its own group (subfolder name becomes the heading).
+- **Per-field group filter** — closes [#32](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/32). New `allowed_groups` field setting (rendered as a checkbox group of available group keys) restricts the picker to a chosen subset of groups for that specific field. Empty / unset = show all (back-compatible).
 - **Arrow-key navigation** in the icon grid (Left/Right step one tile, Up/Down jump a row, Home/End jump to ends) with roving tabindex.
 - **Subtle scale-up transition** on icon tile hover and keyboard focus, with `prefers-reduced-motion` opt-out.
 - New helper `resolve_icon_in_location()` for resolving an icon within a single location config (honours subdir mode).
@@ -40,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Pressing Enter anywhere in the admin opening the icon picker** — fixes [#34](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/34). The trigger and remove buttons in the field view template were missing `type="button"`, so they defaulted to `type="submit"` and intercepted Enter-key form submissions inside Flexible Content (and any other form context). Both now have explicit `type="button"`.
 - `get_svg_icon_uri()` now returns the URL of the matching custom location instead of always falling back to `get_theme_file_uri()`. Pre-fix the helper returned theme-relative URLs even when icons were stored elsewhere via the custom-location filter — those URLs typically 404'd.
 - Numerous a11y issues with the picker popup: missing dialog role, no focus trap, no Escape handler, no focus restoration, unlabelled search input, unlabelled close button, list items not keyboard-focusable.
 - Pre-existing `@var strin` typo on `$path_suffix` corrected to `string`.
