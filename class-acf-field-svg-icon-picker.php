@@ -161,7 +161,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             }
 
             $group_name = $location['name'] ?? '';
-            $group_key = $location['key'] ?? ('' !== $group_name ? sanitize_title($group_name) : "group-{$i}");
+            // Always run the key through sanitize_title so user-supplied keys
+            // can't break HTML id/data attributes downstream. Falls back to
+            // the slugified name, then a deterministic index.
+            $raw_key = $location['key'] ?? $group_name;
+            $group_key = sanitize_title($raw_key);
+            if ('' === $group_key) {
+                $group_key = "group-{$i}";
+            }
 
             $groups[] = [
                 'key' => $group_key,
@@ -232,49 +239,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     }
 
     /**
-     * Normalize the acf_svg_icon_picker_custom_location filter result into a
-     * list of locations. Accepts either a single { path, url } associative
-     * array or a list of them. Invalid entries are dropped.
+     * Thin wrapper over the shared {@see normalize_custom_locations()} helper
+     * so the field class and the public API helpers (`get_svg_icon_path()`,
+     * `get_svg_icon_uri()`) share one definition of the filter contract.
      *
      * @param  mixed $filter_result Raw value returned by the filter.
      * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
      */
     private function normalize_locations(mixed $filter_result): array {
-        if (!is_array($filter_result) || empty($filter_result)) {
-            return [];
-        }
-
-        // Single location (associative with path + url).
-        if (
-            isset($filter_result['path'], $filter_result['url'])
-            && is_string($filter_result['path'])
-            && is_string($filter_result['url'])
-        ) {
-            /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $single */
-            $single = $filter_result;
-            return [$single];
-        }
-
-        // List of locations.
-        if (array_is_list($filter_result)) {
-            $valid = [];
-            foreach ($filter_result as $location) {
-                if (
-                    !is_array($location)
-                    || !isset($location['path'], $location['url'])
-                    || !is_string($location['path'])
-                    || !is_string($location['url'])
-                ) {
-                    continue;
-                }
-
-                /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location */
-                $valid[] = $location;
-            }
-            return $valid;
-        }
-
-        return [];
+        return normalize_custom_locations($filter_result);
     }
 
     /**

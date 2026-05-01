@@ -5,6 +5,13 @@
   let dialogEl = null;
 
   function initializeField(el) {
+    // Guard against double-init from both acf.add_action('ready append', …)
+    // and the MutationObserver fallback firing for the same element.
+    if (el.dataset.acfsipInitialized === '1') {
+      return;
+    }
+    el.dataset.acfsipInitialized = '1';
+
     const trigger = el.querySelector('.acf-svg-icon-picker__icon');
     const input = el.querySelector('input');
     const removeBtn = el.querySelector('.acf-svg-icon-picker__remove');
@@ -88,7 +95,7 @@
           aria-label="${escapeHtml(svg.title)}"
           tabindex="-1"
         >
-          <img src="${svg.url}" alt="" />
+          <img src="${escapeHtml(svg.url)}" alt="" />
           <span aria-hidden="true">${escapeHtml(svg.title)}</span>
         </button>
       </li>
@@ -218,7 +225,13 @@
           if (matched.length === 0) {
             return '';
           }
-          const headingId = `acfsip-group-${escapeHtml(group.key || group.name)}`;
+          // Slugify for a valid HTML id; falls back to a stable index if the
+          // group provides nothing usable.
+          const slug = String(group.key || group.name || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+          const headingId = `acfsip-group-${slug || 'unnamed'}`;
           const heading = group.name
             ? `<h3 id="${headingId}" class="acf-svg-icon-picker__group-heading" data-group="${escapeHtml(group.key || '')}">${escapeHtml(group.name)}</h3>`
             : '';
@@ -360,7 +373,10 @@
     }
 
     iconsFilter.focus();
-    iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
+    // 'input' fires on every value change including paste, autocomplete,
+    // the search field's clear button, and IME/composition events — broader
+    // than 'keyup' which misses non-keyboard edits.
+    iconsFilter.addEventListener('input', debounce(displayResults, 300));
   }
 
   // MutationObserver as a fallback for fields rendered outside the ACF lifecycle
