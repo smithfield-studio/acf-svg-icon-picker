@@ -319,7 +319,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             }
 
             acf_render_field_setting($field, [
-                'label' => __('Allowed groups', 'acf-svg-icon-picker'),
+                'label' => __('Allowed Groups', 'acf-svg-icon-picker'),
                 'instructions' => __(
                     'Limit the picker to these groups for this field. Leave empty to show all.',
                     'acf-svg-icon-picker',
