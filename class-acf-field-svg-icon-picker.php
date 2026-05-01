@@ -33,25 +33,20 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 	private string $path_suffix;
 
 	/**
-	 * Stores the path to the icons.
-	 *
-	 * @var string $path The path to the icons.
-	 */
-	private string $path;
-
-	/**
-	 * Stores the url to the icons.
-	 *
-	 * @var string $url The url to the icons.
-	 */
-	private string $url;
-
-	/**
 	 * Stores the icons.
 	 *
 	 * @var array $svgs The icons, stored as an array.
 	 */
 	public array $svgs = [];
+
+	/**
+	 * Optional grouping metadata for the picker UI. Populated when the
+	 * acf_svg_icon_picker_custom_location filter returns a list of locations.
+	 * Each entry: [ 'key' => string, 'name' => string, 'icons' => string[] ].
+	 *
+	 * @var array<int, array{key: string, name: string, icons: array<int, string>}>
+	 */
+	public array $groups = [];
 
 	/**
 	 * Constructor.
@@ -67,7 +62,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 			'return_format' => 'value',
 		];
 		$this->l10n        = [ 'error' => __( 'Error!', 'acf-svg-icon-picker' ) ];
-		$this->url         = get_stylesheet_directory_uri();
 		$this->path_suffix = apply_filters( 'acf_svg_icon_picker_folder', 'icons/' );
 		$this->path_suffix = apply_filters_deprecated( 'acf_icon_path_suffix', [ $this->path_suffix ], '4.0.0', 'acf_svg_icon_picker_folder' );
 
@@ -85,27 +79,162 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
 	/**
 	 * Method that checks if the custom icon location is set by filter.
-	 * If it is, it sets the path and url to the custom location and collects the icons in that specific location.
 	 *
-	 * @throws \Exception If the path or url for the custom icon location are not set.
+	 * The filter may return either a single location ([ 'path' => …, 'url' => … ])
+	 * or a list of locations to merge ([ [ 'path' => …, 'url' => …, 'name' => … ], … ]).
+	 * When multiple locations are provided the picker UI groups them by `name`.
+	 *
 	 * @return array
 	 */
 	private function check_priority_dir(): array {
-		$priority_dir_settings = apply_filters( 'acf_svg_icon_picker_custom_location', false );
+		$filter_result = apply_filters( 'acf_svg_icon_picker_custom_location', false );
 
-		if ( false === $priority_dir_settings ) {
+		if ( false === $filter_result ) {
 			return [];
 		}
 
-		if ( ! is_array( $priority_dir_settings ) || ! isset( $priority_dir_settings['path'] ) || ! isset( $priority_dir_settings['url'] ) ) {
-			_doing_it_wrong( __FUNCTION__, esc_attr__( 'The acf_svg_icon_picker_custom_location filter should contain an array with a path and url.', 'acf-svg-icon-picker' ), '4.0.0' );
+		// Group rendering is opt-in per the filter shape: a single { path, url }
+		// renders flat (BC); a list of locations renders with group headings,
+		// even if only one location ends up populated. A single location with
+		// 'group_by_subdir' => true also opts into group rendering, with one
+		// group per top-level subdirectory of `path`.
+		$is_list_grouped = is_array( $filter_result ) && array_is_list( $filter_result );
+		$locations       = $this->normalize_locations( $filter_result );
+
+		if ( empty( $locations ) ) {
+			_doing_it_wrong( __FUNCTION__, esc_attr__( 'The acf_svg_icon_picker_custom_location filter should return an array with path and url, or a list of such arrays.', 'acf-svg-icon-picker' ), '4.0.0' );
 			return [];
 		}
 
-		$this->path = $priority_dir_settings['path'];
-		$this->url  = $priority_dir_settings['url'];
+		$svgs            = [];
+		$groups          = [];
+		$has_subdir_mode = false;
 
-		return $this->svg_collector( $this->path, $this->url );
+		foreach ( $locations as $i => $location ) {
+			if ( ! empty( $location['group_by_subdir'] ) ) {
+				$has_subdir_mode = true;
+				$this->collect_subdir_groups( $location, $svgs, $groups );
+				continue;
+			}
+
+			$found = $this->svg_collector( $location['path'], $location['url'] );
+
+			if ( empty( $found ) ) {
+				continue;
+			}
+
+			// First-match wins on slug collisions across locations.
+			$new_keys = [];
+			foreach ( $found as $key => $entry ) {
+				if ( ! isset( $svgs[ $key ] ) ) {
+					$svgs[ $key ] = $entry;
+					$new_keys[]   = $key;
+				}
+			}
+
+			if ( empty( $new_keys ) ) {
+				continue;
+			}
+
+			$group_name = $location['name'] ?? '';
+			$group_key  = $location['key'] ?? ( '' !== $group_name ? sanitize_title( $group_name ) : "group-{$i}" );
+
+			$groups[] = [
+				'key'   => $group_key,
+				'name'  => $group_name,
+				'icons' => $new_keys,
+			];
+		}
+
+		if ( $is_list_grouped || $has_subdir_mode ) {
+			$this->groups = $groups;
+		}
+
+		return $svgs;
+	}
+
+	/**
+	 * Walk the immediate subdirectories of a location's path and add one group
+	 * per subdir that contains SVGs. Subdir name (Title-Cased) becomes the
+	 * group name; sanitised slug becomes the group key.
+	 *
+	 * @param array         $location Location config with `path` + `url` (and
+	 *                                optionally `name`/`key` — currently unused
+	 *                                in subdir mode).
+	 * @param array<string> $svgs     Reference: flat svgs dict (slug-keyed).
+	 * @param array<int>    $groups   Reference: groups list to append into.
+	 */
+	private function collect_subdir_groups( array $location, array &$svgs, array &$groups ): void {
+		$base_path = rtrim( $location['path'], '/\\' );
+		$base_url  = trailingslashit( $location['url'] );
+
+		if ( ! is_dir( $base_path ) ) {
+			return;
+		}
+
+		$scan    = scandir( $base_path );
+		$entries = false === $scan ? [] : array_filter(
+			$scan,
+			fn ( $entry ) => '.' !== $entry && '..' !== $entry && is_dir( "{$base_path}/{$entry}" )
+		);
+
+		foreach ( $entries as $subdir ) {
+			$found = $this->svg_collector( "{$base_path}/{$subdir}", "{$base_url}{$subdir}/" );
+
+			if ( empty( $found ) ) {
+				continue;
+			}
+
+			$new_keys = [];
+			foreach ( $found as $key => $entry ) {
+				if ( ! isset( $svgs[ $key ] ) ) {
+					$svgs[ $key ] = $entry;
+					$new_keys[]   = $key;
+				}
+			}
+
+			if ( empty( $new_keys ) ) {
+				continue;
+			}
+
+			$groups[] = [
+				'key'   => sanitize_title( $subdir ),
+				'name'  => ucwords( str_replace( [ '-', '_' ], ' ', $subdir ) ),
+				'icons' => $new_keys,
+			];
+		}
+	}
+
+	/**
+	 * Normalize the acf_svg_icon_picker_custom_location filter result into a
+	 * list of locations. Accepts either a single { path, url } associative
+	 * array or a list of them. Invalid entries are dropped.
+	 *
+	 * @param mixed $filter_result Raw value returned by the filter.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_locations( mixed $filter_result ): array {
+		if ( ! is_array( $filter_result ) || empty( $filter_result ) ) {
+			return [];
+		}
+
+		// Single location (associative with path + url).
+		if ( isset( $filter_result['path'] ) && isset( $filter_result['url'] ) ) {
+			return [ $filter_result ];
+		}
+
+		// List of locations.
+		if ( array_is_list( $filter_result ) ) {
+			$valid = [];
+			foreach ( $filter_result as $location ) {
+				if ( is_array( $location ) && isset( $location['path'], $location['url'] ) ) {
+					$valid[] = $location;
+				}
+			}
+			return $valid;
+		}
+
+		return [];
 	}
 
 	/**
@@ -202,6 +331,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 			'acfSvgIconPicker',
 			[
 				'svgs'    => $this->svgs,
+				'groups'  => $this->groups,
 				'columns' => 4,
 				'msgs'    => [
 					'title'    => esc_html__( 'Select an icon', 'acf-svg-icon-picker' ),

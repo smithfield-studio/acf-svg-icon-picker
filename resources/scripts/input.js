@@ -1,182 +1,352 @@
-(function ($) {
-  let active_item;
-  let isOpen = false;
+( function() {
+	let activeItemEl;
+	let isOpen = false;
+	let dialogEl = null;
 
-  function initialize_field($el) {
-    $el.find('.acf-svg-icon-picker__selector').on('click', function (e) {
-      e.preventDefault();
-      active_item = $(this);
+	function initializeField( el ) {
+		const trigger = el.querySelector( '.acf-svg-icon-picker__icon' );
+		const input = el.querySelector( 'input' );
+		const removeBtn = el.querySelector( '.acf-svg-icon-picker__remove' );
 
-      if (isOpen) {
-        return;
-      }
+		if ( trigger ) {
+			trigger.addEventListener( 'click', function( e ) {
+				e.preventDefault();
+				if ( isOpen ) {
+					return;
+				}
+				activeItemEl = trigger.closest( '.acf-svg-icon-picker__selector' );
+				renderPopup();
+				renderIconsList();
+				setupFilter();
+			} );
+		}
 
-      renderPopup();
+		// Show the remove button if there is an icon selected.
+		if ( input && input.value.length !== 0 && removeBtn ) {
+			removeBtn.classList.add( 'acf-svg-icon-picker__remove--active' );
+		}
 
-      renderIconsList();
+		if ( removeBtn ) {
+			removeBtn.addEventListener( 'click', function( e ) {
+				e.preventDefault();
+				const parent = removeBtn.closest( '.acf-svg-icon-picker' );
+				if ( ! parent ) {
+					return;
+				}
+				const innerInput = parent.querySelector( 'input' );
+				const iconBtn = parent.querySelector( '.acf-svg-icon-picker__icon' );
+				if ( innerInput ) {
+					innerInput.value = '';
+					innerInput.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+				}
+				if ( iconBtn ) {
+					iconBtn.innerHTML = '<span aria-hidden="true">&plus;</span>';
+				}
+				removeBtn.classList.remove( 'acf-svg-icon-picker__remove--active' );
+			} );
+		}
+	}
 
-      setupFilter();
+	function escapeHtml( str ) {
+		return String( str ).replace( /[&<>"']/g, ( c ) => ( {
+			'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+		}[ c ] ) );
+	}
 
-      // Closing
-      document
-        .querySelector('.acf-svg-icon-picker__popup-close')
-        .addEventListener('click', function (e) {
-          document.querySelector('.acf-svg-icon-picker__popup-overlay').remove();
-          isOpen = false;
-        });
-    });
+	function normalize( str ) {
+		return String( str )
+			.normalize( 'NFD' )
+			.replace( /[̀-ͯ]/g, '' )
+			.toLowerCase();
+	}
 
-    // show the remove button if there is an icon selected
-    const $input = $el.find('input');
-    if ($input.length && $input.val().length != 0) {
-      $el.find('.acf-svg-icon-picker__remove').addClass('acf-svg-icon-picker__remove--active');
-    }
+	function renderIcon( key, svg ) {
+		return `
+      <li>
+        <button
+          type="button"
+          class="acf-svg-icon-picker__option"
+          data-svg="${ escapeHtml( key ) }"
+          aria-label="${ escapeHtml( svg.title ) }"
+          tabindex="-1"
+        >
+          <img src="${ svg.url }" alt="" />
+          <span aria-hidden="true">${ escapeHtml( svg.title ) }</span>
+        </button>
+      </li>
+    `;
+	}
 
-    $el.find('.acf-svg-icon-picker__remove').on('click', function (e) {
-      e.preventDefault();
-      const parent = $(this).parents('.acf-svg-icon-picker');
-      parent.find('input').val('');
-      parent.find('.acf-svg-icon-picker__icon').html('<span>&plus;</span>');
+	function getOptions() {
+		if ( ! dialogEl ) {
+			return [];
+		}
+		return Array.from( dialogEl.querySelectorAll( '.acf-svg-icon-picker__option' ) );
+	}
 
-      jQuery('.acf-svg-icon-picker__selector input').trigger('change');
+	// Roving tabindex: only one option is in the natural tab order so Tab from
+	// the filter input lands on the grid once, then arrow keys move within it.
+	function setRovingTabindex( focusedIdx = 0 ) {
+		const options = getOptions();
+		if ( options.length === 0 ) {
+			return;
+		}
+		const target = Math.max( 0, Math.min( focusedIdx, options.length - 1 ) );
+		options.forEach( ( opt, i ) => {
+			opt.setAttribute( 'tabindex', i === target ? '0' : '-1' );
+		} );
+	}
 
-      parent
-        .find('.acf-svg-icon-picker__remove')
-        .removeClass('acf-svg-icon-picker__remove--active');
-    });
-  }
+	function getColumnCount( option ) {
+		const ul = option.closest( 'ul' );
+		if ( ! ul ) {
+			return 1;
+		}
+		const cols = window.getComputedStyle( ul ).gridTemplateColumns;
+		return cols.split( ' ' ).filter( Boolean ).length || 1;
+	}
 
-  function renderIconsList(svgs = acfSvgIconPicker.svgs) {
-    let popupContents = '';
+	function moveFocus( targetIdx ) {
+		const options = getOptions();
+		if ( options.length === 0 ) {
+			return;
+		}
+		const clamped = Math.max( 0, Math.min( targetIdx, options.length - 1 ) );
+		options.forEach( ( opt, i ) => {
+			opt.setAttribute( 'tabindex', i === clamped ? '0' : '-1' );
+		} );
+		options[ clamped ].focus();
+	}
 
-    if (acfSvgIconPicker.svgs.length === 0) {
-      popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
-    } else {
-      const iconsList = Object.keys(svgs).map((key) => {
-        const svg = svgs[key];
+	function handleGridKeydown( e ) {
+		const options = getOptions();
+		const current = options.indexOf( dialogEl.ownerDocument.activeElement );
+		if ( current === -1 ) {
+			return;
+		} // focus isn't inside the grid
 
-        return `
-          <li data-svg="${key}">
-              <img src="${svg['url']}" alt="${svg['title']}"/>
-              <span>${svg['title']}</span>
-          </li>
-        `;
-      }).join('');
+		let target = current;
+		switch ( e.key ) {
+			case 'ArrowRight':
+				target = current + 1;
+				break;
+			case 'ArrowLeft':
+				target = current - 1;
+				break;
+			case 'ArrowDown':
+				target = current + getColumnCount( dialogEl.ownerDocument.activeElement );
+				break;
+			case 'ArrowUp':
+				target = current - getColumnCount( dialogEl.ownerDocument.activeElement );
+				break;
+			case 'Home':
+				target = 0;
+				break;
+			case 'End':
+				target = options.length - 1;
+				break;
+			default:
+				return;
+		}
+		if ( target < 0 || target >= options.length ) {
+			return;
+		}
+		e.preventDefault();
+		moveFocus( target );
+	}
 
-      popupContents = `<ul>${iconsList}</ul>`;
-    }
+	function renderIconsList( filter = '' ) {
+		const { svgs, groups } = acfSvgIconPicker;
+		const container = dialogEl && dialogEl.querySelector( '.acf-svg-icon-picker__popup-contents' );
+		if ( ! container ) {
+			return;
+		}
 
-    document.querySelector('.acf-svg-icon-picker__popup-contents').innerHTML = popupContents;
-  }
+		if ( ! svgs || Object.keys( svgs ).length === 0 ) {
+			container.innerHTML = `<p>${ acfSvgIconPicker.msgs.no_icons }</p>`;
+			return;
+		}
 
-  function renderPopup() {
-    const popup = `
-      <div class="acf-svg-icon-picker__popup-overlay" style="--acfsip-columns: ${acfSvgIconPicker.columns};">
-        <div class="acf-svg-icon-picker__popup">
-          <div class="acf-svg-icon-picker__popup-header">
-            <h4>${acfSvgIconPicker.msgs.title}</h4>
-            <button class="acf-svg-icon-picker__popup-close" title="${acfSvgIconPicker.msgs.close}">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
-            </button>
-            <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="${acfSvgIconPicker.msgs.filter}" />
-          </div>
-          <div class="acf-svg-icon-picker__popup-contents">
-            <!-- Icons rendered here -->
-          </div>
-        </div>
+		const needle = normalize( filter );
+		const matches = ( key ) => {
+			if ( ! needle ) {
+				return true;
+			}
+			const svg = svgs[ key ];
+			return svg && normalize( svg.title ).includes( needle );
+		};
+
+		let html = '';
+
+		if ( Array.isArray( groups ) && groups.length > 0 ) {
+			html = groups
+				.map( ( group ) => {
+					const matched = ( group.icons || [] ).filter( matches );
+					if ( matched.length === 0 ) {
+						return '';
+					}
+					const headingId = `acfsip-group-${ escapeHtml( group.key || group.name ) }`;
+					const heading = group.name
+						? `<h3 id="${ headingId }" class="acf-svg-icon-picker__group-heading" data-group="${ escapeHtml( group.key || '' ) }">${ escapeHtml( group.name ) }</h3>`
+						: '';
+					const list = matched.map( ( key ) => renderIcon( key, svgs[ key ] ) ).join( '' );
+					return `${ heading }<ul aria-labelledby="${ headingId }">${ list }</ul>`;
+				} )
+				.join( '' );
+		} else {
+			const matched = Object.keys( svgs ).filter( matches );
+			html = matched.length > 0
+				? `<ul>${ matched.map( ( key ) => renderIcon( key, svgs[ key ] ) ).join( '' ) }</ul>`
+				: '';
+		}
+
+		container.innerHTML = html;
+		setRovingTabindex();
+	}
+
+	function renderPopup() {
+		const titleId = 'acfsip-popup-title';
+		const filterId = 'acfsip-popup-filter';
+
+		// Native <dialog> handles focus trap, Esc to close, focus restoration, and
+		// making the page-behind inert when opened with .showModal(). The browser
+		// also implies role="dialog" and aria-modal="true" — no need to set them.
+		dialogEl = document.createElement( 'dialog' );
+		dialogEl.className = 'acf-svg-icon-picker__popup';
+		dialogEl.setAttribute( 'aria-labelledby', titleId );
+		dialogEl.innerHTML = `
+      <div class="acf-svg-icon-picker__popup-header">
+        <h2 id="${ titleId }">${ escapeHtml( acfSvgIconPicker.msgs.title ) }</h2>
+        <label class="screen-reader-text" for="${ filterId }">${ escapeHtml( acfSvgIconPicker.msgs.filter ) }</label>
+        <input
+          class="acf-svg-icon-picker__filter"
+          type="search"
+          id="${ filterId }"
+          placeholder="${ escapeHtml( acfSvgIconPicker.msgs.filter ) }"
+          autocomplete="off"
+        />
+        <button
+          type="button"
+          class="acf-svg-icon-picker__popup-close"
+          aria-label="${ escapeHtml( acfSvgIconPicker.msgs.close ) }"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
+        </button>
+      </div>
+      <div class="acf-svg-icon-picker__popup-contents">
+        <!-- Icons rendered here -->
       </div>
     `;
 
-    jQuery('body').append(popup);
-    isOpen = true;
+		document.body.appendChild( dialogEl );
+		dialogEl.showModal();
+		isOpen = true;
 
-    jQuery('.acf-svg-icon-picker__popup-overlay').on('close', function () {
-      jQuery('.acf-svg-icon-picker__popup-overlay').remove();
-      isOpen = false;
-    });
-  }
+		// Close on backdrop click. The click target is the dialog itself when
+		// the user clicks the dimmed area outside the popup body.
+		dialogEl.addEventListener( 'click', function( e ) {
+			if ( e.target === dialogEl ) {
+				dialogEl.close();
+			}
+		} );
 
-  if (typeof acf.add_action !== 'undefined') {
-    acf.add_action('ready append', function ($el) {
-      acf.get_fields({ type: 'svg_icon_picker' }, $el).each(function () {
-        initialize_field($(this));
-      });
-    });
-  }
+		// Close button.
+		dialogEl
+			.querySelector( '.acf-svg-icon-picker__popup-close' )
+			.addEventListener( 'click', function() {
+				dialogEl.close();
+			} );
 
-  function setupFilter() {
-    const iconsFilter = document.querySelector('#filterIcons');
+		// Arrow-key navigation in the icon grid (roving tabindex).
+		dialogEl.addEventListener( 'keydown', handleGridKeydown );
 
-    function filterIcons(wordToMatch = '') {
-      const normalizedWord = wordToMatch
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
+		// Native dialog already restores focus to the trigger on close. We only
+		// need to clean up the DOM and reset state.
+		dialogEl.addEventListener( 'close', function() {
+			dialogEl.remove();
+			dialogEl = null;
+			isOpen = false;
+		} );
 
-      let svgs = {};
-      Object.keys(acfSvgIconPicker.svgs).map((key) => {
-        const icon = acfSvgIconPicker.svgs[key];
-        const normalizedTitle = icon['title']
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase();
+		// Pick an icon (delegated since options are rendered after the popup mounts).
+		dialogEl.addEventListener( 'click', function( e ) {
+			const btn = e.target.closest( '.acf-svg-icon-picker__option' );
+			if ( ! btn || ! activeItemEl ) {
+				return;
+			}
+			const val = btn.getAttribute( 'data-svg' );
+			const img = btn.querySelector( 'img' );
+			const src = img ? img.getAttribute( 'src' ) : '';
+			const input = activeItemEl.querySelector( 'input' );
+			const iconBtn = activeItemEl.querySelector( '.acf-svg-icon-picker__icon' );
+			if ( input ) {
+				input.value = val;
+				input.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+			}
+			if ( iconBtn ) {
+				iconBtn.innerHTML = `<img src="${ src }" alt=""/>`;
+			}
+			const removeBtn = activeItemEl
+				.closest( '.acf-svg-icon-picker' )
+				?.querySelector( '.acf-svg-icon-picker__remove' );
+			if ( removeBtn ) {
+				removeBtn.classList.add( 'acf-svg-icon-picker__remove--active' );
+			}
+			dialogEl.close();
+		} );
+	}
 
-        if (normalizedTitle.includes(normalizedWord)) {
-          svgs[key] = icon;
-        }
-      });
+	// ACF integration: fires when fields render or are appended (repeaters etc).
+	// `acf.get_fields(...)` returns a jQuery collection but `.each(this)` exposes
+	// the raw DOM node, so we never reach for $() ourselves.
+	if ( typeof acf !== 'undefined' && typeof acf.add_action !== 'undefined' ) {
+		acf.add_action( 'ready append', function( $el ) {
+			acf.get_fields( { type: 'svg_icon_picker' }, $el ).each( function() {
+				initializeField( this );
+			} );
+		} );
+	}
 
-      return svgs;
-    }
+	function setupFilter() {
+		const iconsFilter = dialogEl.querySelector( '.acf-svg-icon-picker__filter' );
+		if ( ! iconsFilter ) {
+			return;
+		}
 
-    function displayResults() {
-      svgs = filterIcons($(this).val());
-      renderIconsList(svgs);
-    }
+		function displayResults() {
+			renderIconsList( this.value );
+		}
 
-    function debounce(func, wait) {
-      let timeout;
-      return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-      };
-    }
+		function debounce( func, wait ) {
+			let timeout;
+			return function( ...args ) {
+				clearTimeout( timeout );
+				timeout = setTimeout( () => func.apply( this, args ), wait );
+			};
+		}
 
-    iconsFilter.focus();
-    iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
-  }
+		iconsFilter.focus();
+		iconsFilter.addEventListener( 'keyup', debounce( displayResults, 300 ) );
+	}
 
-  jQuery(document).on('click', 'li[data-svg]', function () {
-    const val = jQuery(this).attr('data-svg');
-    const src = jQuery(this).find('img').attr('src');
-    active_item.find('input').val(val);
-    active_item.find('.acf-svg-icon-picker__icon').html(`<img src="${src}" alt=""/>`);
-    jQuery('.acf-svg-icon-picker__popup-overlay').trigger('close');
-    jQuery('.acf-svg-icon-picker__popup-overlay').remove();
-    jQuery('.acf-svg-icon-picker__selector input').trigger('change');
+	// MutationObserver as a fallback for fields rendered outside the ACF lifecycle
+	// (e.g. some block-editor flows). Skips text nodes and re-uses initializeField.
+	const observer = new MutationObserver( ( mutations ) => {
+		mutations.forEach( ( mutation ) => {
+			mutation.addedNodes.forEach( ( node ) => {
+				if ( node.nodeType !== 1 ) {
+					return;
+				}
+				if ( node.matches?.( '.acf-svg-icon-picker' ) ) {
+					initializeField( node );
+				}
+				node.querySelectorAll?.( '.acf-svg-icon-picker' ).forEach( initializeField );
+			} );
+		} );
+	} );
 
-    active_item
-      .parents('.acf-svg-icon-picker')
-      .find('.acf-svg-icon-picker__remove')
-      .addClass('acf-svg-icon-picker__remove--active');
-  });
-
-  // Use MutationObserver to detect changes in the DOM
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.addedNodes.length) {
-        $(mutation.addedNodes)
-          .find('.acf-svg-icon-picker')
-          .each(function () {
-            initialize_field($(this));
-          });
-      }
-    });
-  });
-
-  // Start observing the document body for changes
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-})(jQuery);
+	observer.observe( document.body, {
+		childList: true,
+		subtree: true,
+	} );
+}() );
