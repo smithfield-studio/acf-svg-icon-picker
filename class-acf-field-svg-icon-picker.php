@@ -33,7 +33,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Stores the icons.
      *
-     * @var array $svgs The icons, stored as an array.
+     * @var array<string, array<string, mixed>> $svgs The icons, stored as an array.
      */
     public array $svgs = [];
 
@@ -99,7 +99,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * or a list of locations to merge ([ [ 'path' => …, 'url' => …, 'name' => … ], … ]).
      * When multiple locations are provided the picker UI groups them by `name`.
      *
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
     private function check_priority_dir(): array {
         $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
@@ -182,11 +182,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * per subdir that contains SVGs. Subdir name (Title-Cased) becomes the
      * group name; sanitised slug becomes the group key.
      *
-     * @param array         $location Location config with `path` + `url` (and
-     *                                optionally `name`/`key` — currently unused
-     *                                in subdir mode).
-     * @param array<string> $svgs     Reference: flat svgs dict (slug-keyed).
-     * @param array<int>    $groups   Reference: groups list to append into.
+     * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location Location config.
+     * @param array<string, array<string, mixed>>                                                   $svgs     Reference: flat svgs dict (slug-keyed).
+     * @param array<int, array<string, mixed>>                                                      $groups   Reference: groups list to append into.
      */
     private function collect_subdir_groups(array $location, array &$svgs, array &$groups): void {
         $base_path = rtrim($location['path'], '/\\');
@@ -238,8 +236,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * list of locations. Accepts either a single { path, url } associative
      * array or a list of them. Invalid entries are dropped.
      *
-     * @param mixed $filter_result Raw value returned by the filter.
-     * @return array<int, array<string, mixed>>
+     * @param  mixed $filter_result Raw value returned by the filter.
+     * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
      */
     private function normalize_locations(mixed $filter_result): array {
         if (!is_array($filter_result) || empty($filter_result)) {
@@ -247,18 +245,30 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         }
 
         // Single location (associative with path + url).
-        if (isset($filter_result['path'], $filter_result['url'])) {
-            return [$filter_result];
+        if (
+            isset($filter_result['path'], $filter_result['url'])
+            && is_string($filter_result['path'])
+            && is_string($filter_result['url'])
+        ) {
+            /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $single */
+            $single = $filter_result;
+            return [$single];
         }
 
         // List of locations.
         if (array_is_list($filter_result)) {
             $valid = [];
             foreach ($filter_result as $location) {
-                if (!(is_array($location) && isset($location['path'], $location['url']))) {
+                if (
+                    !is_array($location)
+                    || !isset($location['path'], $location['url'])
+                    || !is_string($location['path'])
+                    || !is_string($location['url'])
+                ) {
                     continue;
                 }
 
+                /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location */
                 $valid[] = $location;
             }
             return $valid;
@@ -270,7 +280,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Method that checks the theme directories for icons.
      *
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
     private function check_theme_dirs(): array {
         $parent_theme_path = get_template_directory() . '/' . $this->path_suffix;
@@ -292,7 +302,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Method that renders the field in the admin.
      *
-     * @param array $field the field array
+     * @param array<string, mixed> $field the field array
      */
     public function render_field($field): void {
         $saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
@@ -386,8 +396,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Collects the icons from the specified path.
      *
-     * @param string $path The path to the icons to scan for SVG files.
-     * @param string $url The url to the icons.
+     * @param  string $path The path to the icons to scan for SVG files.
+     * @param  string $url The url to the icons.
+     * @return array<string, array<string, mixed>>
      */
     private function svg_collector(string $path, string $url): array {
         $svg_files = [];
@@ -395,7 +406,12 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             return [];
         }
 
-        $found_files = array_filter(scandir($path), static function ($file) {
+        $entries = scandir($path);
+        if (false === $entries) {
+            return [];
+        }
+
+        $found_files = array_filter($entries, static function ($file) {
             return 'svg' === pathinfo($file, PATHINFO_EXTENSION);
         });
 
@@ -424,7 +440,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Get the icon data.
      *
-     * @param string $key The icon key.
+     * @param  string $key The icon key.
+     * @return array<string, mixed>
      */
     public function get_icon_data(string $key): array {
         $icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
@@ -448,10 +465,10 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Render a php/html view.
      *
-     * @param string $view The view to render.
-     * @param array  $data The data to pass to the view.
+     * @param string               $view The view to render.
+     * @param array<string, mixed> $data The data to pass to the view.
      */
-    private function render_view(string $view, array $data) {
+    private function render_view(string $view, array $data): void {
         // @phpstan-ignore constant.notFound
         $plugin_path = ACF_SVG_ICON_PICKER_PATH;
         $path = "{$plugin_path}resources/views/{$view}.php";

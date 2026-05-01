@@ -2,3 +2,4 @@ vendor
 wp-content
 node_modules
 .phpunit.result.cache
+.DS_Store

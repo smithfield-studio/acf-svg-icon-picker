@@ -51,24 +51,36 @@ add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
  *
  * @internal
  * @param  mixed $filter_result Raw value returned by the filter.
- * @return array<int, array<string, mixed>>
+ * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
  */
 function normalize_custom_locations(mixed $filter_result): array {
     if (!is_array($filter_result) || empty($filter_result)) {
         return [];
     }
 
-    if (isset($filter_result['path'], $filter_result['url'])) {
-        return [$filter_result];
+    if (
+        isset($filter_result['path'], $filter_result['url'])
+        && is_string($filter_result['path'])
+        && is_string($filter_result['url'])
+    ) {
+        /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $single */
+        $single = $filter_result;
+        return [$single];
     }
 
     if (array_is_list($filter_result)) {
         $valid = [];
         foreach ($filter_result as $location) {
-            if (!(is_array($location) && isset($location['path'], $location['url']))) {
+            if (
+                !is_array($location)
+                || !isset($location['path'], $location['url'])
+                || !is_string($location['path'])
+                || !is_string($location['url'])
+            ) {
                 continue;
             }
 
+            /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location */
             $valid[] = $location;
         }
         return $valid;
@@ -196,5 +208,7 @@ function get_svg_icon(string $icon_name): string {
         return '';
     }
 
-    return file_get_contents($path);
+    $contents = file_get_contents($path);
+
+    return false === $contents ? '' : $contents;
 }
