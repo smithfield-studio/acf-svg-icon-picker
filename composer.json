@@ -73,6 +73,9 @@
     "config": {
         "allow-plugins": {
             "composer/installers": true
+        },
+        "platform": {
+            "php": "8.1"
         }
     }
 }
