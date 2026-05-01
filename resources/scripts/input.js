@@ -192,15 +192,20 @@
       return;
     }
 
-    // Per-field allowlist: when set, restrict groups to those keys, and flat-svgs
-    // mode to only icons that belong to one of the allowed groups.
-    const visibleGroups = Array.isArray(groups)
-      ? activeAllowedGroups
+    // Per-field allowlist: when set AND groups are configured, restrict the
+    // visible groups (and the flat-svgs view) to icons in those groups. If
+    // groups aren't configured at all (flat-mode site), ignore the allowlist
+    // entirely and show every icon — better than failing closed when a
+    // field's saved allowed_groups no longer match the live config.
+    const groupsConfigured = Array.isArray(groups) && groups.length > 0;
+    const useAllowlist = groupsConfigured && activeAllowedGroups;
+    const visibleGroups = groupsConfigured
+      ? useAllowlist
         ? groups.filter((g) => activeAllowedGroups.includes(g.key))
         : groups
       : [];
 
-    const allowedKeySet = activeAllowedGroups
+    const allowedKeySet = useAllowlist
       ? new Set(visibleGroups.flatMap((g) => g.icons || []))
       : null;
 
@@ -235,8 +240,13 @@
           const heading = group.name
             ? `<h3 id="${headingId}" class="acf-svg-icon-picker__group-heading" data-group="${escapeHtml(group.key || '')}">${escapeHtml(group.name)}</h3>`
             : '';
+          // When there's no rendered heading, point at a label string instead
+          // of an aria-labelledby pointing at a non-existent id.
+          const listLabelAttr = group.name
+            ? `aria-labelledby="${headingId}"`
+            : `aria-label="${escapeHtml(String(group.key || 'Icons'))}"`;
           const list = matched.map((key) => renderIcon(key, svgs[key])).join('');
-          return `${heading}<ul aria-labelledby="${headingId}">${list}</ul>`;
+          return `${heading}<ul ${listLabelAttr}>${list}</ul>`;
         })
         .join('');
     } else {
