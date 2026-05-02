@@ -109,6 +109,20 @@
     return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__option'));
   }
 
+  // One sub-array per group <ul>. Each group is a self-contained grid for the
+  // purposes of ArrowUp/ArrowDown — column position is preserved when the user
+  // crosses into the adjacent group, rather than treating every tile in the
+  // popup as one long linear list (which made ArrowDown from a partial last row
+  // land deep into the next group at the wrong column).
+  function getOptionGroups() {
+    if (!dialogEl) {
+      return [];
+    }
+    return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul')).map(
+      (ul) => Array.from(ul.querySelectorAll('.acf-svg-icon-picker__option')),
+    );
+  }
+
   // Roving tabindex: only one option is in the natural tab order so Tab from
   // the filter input lands on the grid once, then arrow keys move within it.
   function setRovingTabindex(focusedIdx = 0) {
@@ -131,53 +145,97 @@
     return cols.split(' ').filter(Boolean).length || 1;
   }
 
-  function moveFocus(targetIdx) {
-    const options = getOptions();
-    if (options.length === 0) {
+  function moveFocusTo(el) {
+    if (!el) {
       return;
     }
-    const clamped = Math.max(0, Math.min(targetIdx, options.length - 1));
-    options.forEach((opt, i) => {
-      opt.setAttribute('tabindex', i === clamped ? '0' : '-1');
+    getOptions().forEach((opt) => {
+      opt.setAttribute('tabindex', opt === el ? '0' : '-1');
     });
-    options[clamped].focus();
+    el.focus();
+  }
+
+  // Resolve the focused element to its (group, row, col) position so the
+  // vertical-nav code can reason about group boundaries.
+  function findGroupCoords(activeEl, groups) {
+    for (let g = 0; g < groups.length; g++) {
+      const idx = groups[g].indexOf(activeEl);
+      if (idx === -1) {
+        continue;
+      }
+      const cols = getColumnCount(groups[g][0]);
+      return {
+        groupIdx: g,
+        cols,
+        row: Math.floor(idx / cols),
+        col: idx % cols,
+      };
+    }
+    return null;
   }
 
   function handleGridKeydown(e) {
     const options = getOptions();
-    const current = options.indexOf(dialogEl.ownerDocument.activeElement);
-    if (current === -1) {
-      return;
-    } // focus isn't inside the grid
-
-    let target = current;
-    switch (e.key) {
-      case 'ArrowRight':
-        target = current + 1;
-        break;
-      case 'ArrowLeft':
-        target = current - 1;
-        break;
-      case 'ArrowDown':
-        target = current + getColumnCount(dialogEl.ownerDocument.activeElement);
-        break;
-      case 'ArrowUp':
-        target = current - getColumnCount(dialogEl.ownerDocument.activeElement);
-        break;
-      case 'Home':
-        target = 0;
-        break;
-      case 'End':
-        target = options.length - 1;
-        break;
-      default:
-        return;
+    const activeEl = dialogEl.ownerDocument.activeElement;
+    const flatIdx = options.indexOf(activeEl);
+    if (flatIdx === -1) {
+      return; // focus isn't inside the grid
     }
-    if (target < 0 || target >= options.length) {
+
+    let target = null;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      // Left/right is linear across the whole popup — natural reading order.
+      const next = e.key === 'ArrowRight' ? flatIdx + 1 : flatIdx - 1;
+      if (next >= 0 && next < options.length) {
+        target = options[next];
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const groups = getOptionGroups();
+      const coords = findGroupCoords(activeEl, groups);
+      if (!coords) {
+        return;
+      }
+      const { groupIdx, cols, row, col } = coords;
+      const group = groups[groupIdx];
+      const lastRow = Math.floor((group.length - 1) / cols);
+
+      if (e.key === 'ArrowDown') {
+        if (row < lastRow) {
+          const next = (row + 1) * cols + col;
+          target = group[Math.min(next, group.length - 1)];
+        } else if (groupIdx + 1 < groups.length) {
+          // Drop into the next group's first row at the same column. Fall back
+          // to the last available column if the target group is narrower.
+          const next = groups[groupIdx + 1];
+          const nextCols = getColumnCount(next[0]);
+          target = next[Math.min(col, nextCols - 1, next.length - 1)];
+        }
+      } else {
+        if (row > 0) {
+          target = group[(row - 1) * cols + col];
+        } else if (groupIdx > 0) {
+          // Climb into the previous group's last row at the same column.
+          const prev = groups[groupIdx - 1];
+          const prevCols = getColumnCount(prev[0]);
+          const prevLastRow = Math.floor((prev.length - 1) / prevCols);
+          const candidate = prevLastRow * prevCols + Math.min(col, prevCols - 1);
+          target = prev[Math.min(candidate, prev.length - 1)];
+        }
+      }
+    } else if (e.key === 'Home') {
+      target = options[0];
+    } else if (e.key === 'End') {
+      target = options[options.length - 1];
+    } else {
+      return;
+    }
+
+    if (!target) {
       return;
     }
     e.preventDefault();
-    moveFocus(target);
+    moveFocusTo(target);
   }
 
   function renderIconsList(filter = '') {
