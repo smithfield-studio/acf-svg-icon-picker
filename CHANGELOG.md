@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Auto-grouping by subdirectory** — set `'group_by_subdir' => true` on a single location to expose each top-level subfolder as its own group.
 - **Per-field group filter** — new `allowed_groups` field setting restricts a specific field to a chosen subset of the configured groups (closes [#32](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/32)).
 - **Arrow-key navigation** in the icon grid with roving tabindex (Left/Right step a tile, Up/Down jump a row, Home/End jump to ends).
-- PHP 8.1 minimum, declared via `composer.json` so install fails on older versions instead of silently breaking.
+- **PHP 8.2 minimum** (raised from 8.1). PHP 8.1 reached end-of-life in Dec 2025; 8.2 is the lowest version still receiving security fixes. Declared via `composer.json` so install fails on older versions instead of silently breaking.
 
 ### Changed
 
@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Picker grid uses `grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))`; tiles use `aspect-ratio: 1` and reflow with popup width. Popup itself sizes to `clamp(320px, 75vw, 1200px) × clamp(400px, 75vh, 900px)`.
 - Popup header is a single compact row (title + search + close); trigger selector enlarged to 70px.
 - PHPStan upgraded to 2.x and raised to level 10 (max). Strict array-shape types and `is_string` guards on filter results throughout.
+- Modern PHP-syntax pass via [Rector](https://getrector.com/) (one-shot, not a permanent dep): `::class` constant references over string class names, first-class callable syntax (`$this->method(...)`, `is_string(...)`), `readonly` on the `path_suffix` property, arrow functions in test fixtures, `dirname(__FILE__, 2)` for nested dirname calls, `=== []` in place of `empty()` on known-array values.
 
 ### Fixed
 

@@ -31,7 +31,7 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 function _manually_load_plugin() {
     require __DIR__ . '/../wp-content/plugins/advanced-custom-fields/acf.php';
-    require dirname(dirname(__FILE__)) . '/acf-svg-icon-picker.php';
+    require dirname(__FILE__, 2) . '/acf-svg-icon-picker.php';
 }
 
 tests_add_filter('muplugins_loaded', '_manually_load_plugin');

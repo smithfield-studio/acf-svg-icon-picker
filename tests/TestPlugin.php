@@ -33,7 +33,7 @@ class TestPlugin extends \WP_UnitTestCase {
      * Test if the plugin is loaded.
      */
     public function test_plugin_class() {
-        $this->assertTrue(class_exists('SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker'));
+        $this->assertTrue(class_exists(\SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class));
     }
 
     /**
@@ -96,9 +96,7 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_custom_theme_dirs() {
         switch_theme('test-child-theme');
 
-        add_filter('acf_svg_icon_picker_folder', function () {
-            return 'custom-icons/';
-        });
+        add_filter('acf_svg_icon_picker_folder', fn() => 'custom-icons/');
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
         $svgs = $plugin->svgs;
@@ -140,12 +138,10 @@ class TestPlugin extends \WP_UnitTestCase {
 
     public function test_get_svg_icon_helper_function_custom_path() {
         switch_theme('test-child-theme');
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                'path' => WP_CONTENT_DIR . '/random-location-icons/',
-                'url' => content_url() . '/random-location-icons/',
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/random-location-icons/',
+            'url' => content_url() . '/random-location-icons/',
+        ]);
 
         $icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('bell');
         $this->assertStringContainsString('<svg', $icon);
@@ -157,12 +153,9 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_custom_dir_override_wrong_filter_usage() {
         switch_theme('test-child-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return 'custom-icons/';
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => 'custom-icons/');
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-        $svgs = $plugin->svgs;
         $this->setExpectedIncorrectUsage('check_priority_dir');
     }
 
@@ -172,12 +165,10 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_custom_dir_override() {
         switch_theme('test-child-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                'path' => WP_CONTENT_DIR . '/random-location-icons/',
-                'url' => content_url() . '/random-location-icons/',
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/random-location-icons/',
+            'url' => content_url() . '/random-location-icons/',
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
         $svgs = $plugin->svgs;
@@ -250,22 +241,20 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_multi_location_groups_populated() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Brand',
-                    'key' => 'brand',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Social',
-                    'key' => 'social',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
-                    'url' => content_url() . '/themes/test-theme/custom-icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -285,22 +274,20 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_multi_location_svgs_use_composite_keys() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Brand',
-                    'key' => 'brand',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Social',
-                    'key' => 'social',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
-                    'url' => content_url() . '/themes/test-theme/custom-icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -318,22 +305,20 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_multi_location_same_slug_distinct_under_composite() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Parent',
-                    'key' => 'parent',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Child',
-                    'key' => 'child',
-                    'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
-                    'url' => content_url() . '/themes/test-child-theme/icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Parent',
+                'key' => 'parent',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Child',
+                'key' => 'child',
+                'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
+                'url' => content_url() . '/themes/test-child-theme/icons/',
+            ],
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -353,22 +338,20 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_svg_icon_path_composite_targets_specific_group() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Parent',
-                    'key' => 'parent',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Child',
-                    'key' => 'child',
-                    'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
-                    'url' => content_url() . '/themes/test-child-theme/icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Parent',
+                'key' => 'parent',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Child',
+                'key' => 'child',
+                'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
+                'url' => content_url() . '/themes/test-child-theme/icons/',
+            ],
+        ]);
 
         $parent_path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('parent.discord');
         $this->assertStringEndsWith('/test-theme/icons/discord.svg', $parent_path);
@@ -384,22 +367,20 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_svg_icon_path_bare_slug_back_compat() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Parent',
-                    'key' => 'parent',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Child',
-                    'key' => 'child',
-                    'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
-                    'url' => content_url() . '/themes/test-child-theme/icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Parent',
+                'key' => 'parent',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Child',
+                'key' => 'child',
+                'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
+                'url' => content_url() . '/themes/test-child-theme/icons/',
+            ],
+        ]);
 
         $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('discord');
         $this->assertStringEndsWith('/test-theme/icons/discord.svg', $path);
@@ -411,16 +392,14 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_icon_data_resolves_composite_and_bare() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Brand',
-                    'key' => 'brand',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -440,20 +419,18 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_multi_location_empty_dir_skipped() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Brand',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Empty',
-                    'path' => WP_CONTENT_DIR . '/this-path-does-not-exist/',
-                    'url' => content_url() . '/this-path-does-not-exist/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Empty',
+                'path' => WP_CONTENT_DIR . '/this-path-does-not-exist/',
+                'url' => content_url() . '/this-path-does-not-exist/',
+            ],
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -469,12 +446,10 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_single_location_leaves_groups_empty() {
         switch_theme('test-child-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                'path' => WP_CONTENT_DIR . '/random-location-icons/',
-                'url' => content_url() . '/random-location-icons/',
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/random-location-icons/',
+            'url' => content_url() . '/random-location-icons/',
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -488,20 +463,18 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_svg_icon_path_finds_in_second_location() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Brand',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
-                    'url' => content_url() . '/themes/test-theme/icons/',
-                ],
-                [
-                    'name' => 'Social',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
-                    'url' => content_url() . '/themes/test-theme/custom-icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
 
         // `facebook` only exists in the second location.
         $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('facebook');
@@ -515,15 +488,13 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_svg_icon_uri_returns_matching_location_url() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                [
-                    'name' => 'Social',
-                    'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
-                    'url' => content_url() . '/themes/test-theme/custom-icons/',
-                ],
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
 
         $uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('facebook');
         $this->assertEquals('http://example.org/wp-content/themes/test-theme/custom-icons/facebook.svg', $uri);
@@ -537,13 +508,11 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_group_by_subdir_creates_group_per_subdir() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                'path' => WP_CONTENT_DIR . '/themes/test-theme/',
-                'url' => content_url() . '/themes/test-theme/',
-                'group_by_subdir' => true,
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/themes/test-theme/',
+            'url' => content_url() . '/themes/test-theme/',
+            'group_by_subdir' => true,
+        ]);
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
@@ -561,13 +530,11 @@ class TestPlugin extends \WP_UnitTestCase {
     public function test_get_svg_icon_path_finds_in_subdir() {
         switch_theme('test-theme');
 
-        add_filter('acf_svg_icon_picker_custom_location', function () {
-            return [
-                'path' => WP_CONTENT_DIR . '/themes/test-theme/',
-                'url' => content_url() . '/themes/test-theme/',
-                'group_by_subdir' => true,
-            ];
-        });
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/themes/test-theme/',
+            'url' => content_url() . '/themes/test-theme/',
+            'group_by_subdir' => true,
+        ]);
 
         $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('facebook');
         $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $path);

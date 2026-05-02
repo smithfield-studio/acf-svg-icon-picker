@@ -12,7 +12,7 @@
  * License URI: https://opensource.org/license/mit
  * GitHub Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * GitHub Branch: main
- * Requires PHP: 8.1
+ * Requires PHP: 8.2
  *
  * @package Advanced Custom Fields: SVG Icon Picker
  **/
@@ -30,7 +30,7 @@ function include_field_types(): void {
     }
 
     require_once __DIR__ . '/class-acf-field-svg-icon-picker.php';
-    acf_register_field_type('SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker');
+    acf_register_field_type(\SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class);
 }
 
 add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
@@ -45,7 +45,7 @@ add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
  * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
  */
 function normalize_custom_locations(mixed $filter_result): array {
-    if (!is_array($filter_result) || empty($filter_result)) {
+    if (!is_array($filter_result) || $filter_result === []) {
         return [];
     }
 
@@ -91,7 +91,7 @@ function normalize_custom_locations(mixed $filter_result): array {
 function get_svg_icon_uri(string $icon_name): string {
     $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
 
-    if (!empty($locations)) {
+    if ($locations !== []) {
         $resolved = resolve_in_locations($locations, $icon_name);
         return $resolved === null ? '' : $resolved['url'];
     }
@@ -118,7 +118,7 @@ function get_svg_icon_uri(string $icon_name): string {
 function get_svg_icon_path(string $icon_name): string {
     $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
 
-    if (!empty($locations)) {
+    if ($locations !== []) {
         $resolved = resolve_in_locations($locations, $icon_name);
         return $resolved === null ? '' : $resolved['path'];
     }

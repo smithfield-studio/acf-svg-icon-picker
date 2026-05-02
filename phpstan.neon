@@ -5,8 +5,8 @@ parameters:
     # Match the composer platform pin so PHPStan flags any 8.2+ syntax we'd
     # accidentally introduce (readonly classes, typed const, DNF types, etc).
     phpVersion:
-        min: 80100
-        max: 80199
+        min: 80200
+        max: 80299
     scanFiles:
         - acf-svg-icon-picker.php
         - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php

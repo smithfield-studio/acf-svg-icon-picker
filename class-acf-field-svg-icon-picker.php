@@ -33,7 +33,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      *
      * @var string $path_suffix The path suffix to the icons.
      */
-    private string $path_suffix;
+    private readonly string $path_suffix;
 
     /**
      * Stores the icons.
@@ -71,7 +71,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // Custom location takes precedence; fall back to scanning the active
         // theme dirs (parent + child).
         $svgs = $this->check_priority_dir();
-        $this->svgs = empty($svgs) ? $this->check_theme_dirs() : $svgs;
+        $this->svgs = $svgs === [] ? $this->check_theme_dirs() : $svgs;
 
         parent::__construct();
     }
@@ -102,7 +102,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $is_list_grouped = is_array($filter_result) && array_is_list($filter_result);
         $locations = $this->normalize_locations($filter_result);
 
-        if (empty($locations)) {
+        if ($locations === []) {
             _doing_it_wrong(
                 __FUNCTION__,
                 esc_attr__(
@@ -128,7 +128,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
             $found = $this->svg_collector($location['path'], $location['url']);
 
-            if (empty($found)) {
+            if ($found === []) {
                 continue;
             }
 
@@ -197,7 +197,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         foreach ($entries as $subdir) {
             $found = $this->svg_collector("{$base_path}/{$subdir}", "{$base_url}{$subdir}/");
 
-            if (empty($found)) {
+            if ($found === []) {
                 continue;
             }
 
@@ -245,7 +245,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         if ($parent_theme_path !== $child_theme_path) {
             // array_merge dedupes by slug because $svgs is slug-keyed and the
             // child entries (run second) overwrite parent entries on collision.
-            $svgs = array_merge($svgs, $this->svg_collector($child_theme_path, $child_theme_url));
+            return array_merge($svgs, $this->svg_collector($child_theme_path, $child_theme_url));
         }
 
         return $svgs;
@@ -261,7 +261,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $icon = is_string($saved_value) && $saved_value !== '' ? $this->get_icon_data($saved_value) : null;
 
         $allowed_groups = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
-            ? array_values(array_filter($field['allowed_groups'], 'is_string'))
+            ? array_values(array_filter($field['allowed_groups'], is_string(...)))
             : [];
 
         $this->render_view('acf-field', [
@@ -376,7 +376,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // add_action dedupes by callback identity, and a static guard inside
         // render_dialog_template() ensures the markup is only emitted once
         // even though input_admin_enqueue_scripts() runs per page-with-fields.
-        add_action('admin_footer', [$this, 'render_dialog_template']);
+        add_action('admin_footer', $this->render_dialog_template(...));
     }
 
     /**
@@ -437,11 +437,12 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             return [];
         }
 
-        $found_files = array_filter($entries, static function ($file) {
-            return pathinfo($file, PATHINFO_EXTENSION) === 'svg';
-        });
+        $found_files = array_filter(
+            $entries,
+            static fn($file) => pathinfo((string) $file, PATHINFO_EXTENSION) === 'svg',
+        );
 
-        if (empty($found_files)) {
+        if ($found_files === []) {
             return [];
         }
 
