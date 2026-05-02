@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Removed
 
 - `.acf-svg-icon-picker__popup-overlay` wrapper element — replaced by native `<dialog>` + `::backdrop`. The old z-index workaround is no longer needed (dialogs opened with `showModal()` live in the browser's top-layer).
+- Deprecated filters `acf_icon_path`, `acf_icon_url`, and `acf_icon_path_suffix` (deprecated since 4.0.0). Use `acf_svg_icon_picker_folder` for the icon folder; the other two had no effect and were emitting notices only.
 - PHPCS / WPCS / 10up ruleset / `phpcompatibility/php-compatibility` — replaced by [Mago](https://github.com/carthage-software/mago) for PHP formatting.
 - ESLint / Stylelint — replaced by [Oxfmt + Oxlint](https://github.com/oxc-project/oxc).
 

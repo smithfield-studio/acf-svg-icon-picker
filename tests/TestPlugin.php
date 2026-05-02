@@ -26,7 +26,6 @@ class TestPlugin extends \WP_UnitTestCase {
     public function tearDown(): void {
         remove_all_filters('acf_svg_icon_picker_custom_location');
         remove_all_filters('acf_svg_icon_picker_folder');
-        remove_all_filters('acf_icon_path_suffix');
         parent::tearDown();
     }
 
@@ -150,28 +149,6 @@ class TestPlugin extends \WP_UnitTestCase {
 
         $icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('bell');
         $this->assertStringContainsString('<svg', $icon);
-    }
-
-    /**
-     * Test if the deprecated filters are correctly forwarded to the new filter.
-     *
-     * @expectedDeprecated acf_icon_path_suffix
-     */
-    public function test_deprecated_filters() {
-        switch_theme('test-child-theme');
-
-        add_filter('acf_icon_path_suffix', function () {
-            return 'custom-icons/';
-        });
-
-        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-        $svgs = $plugin->svgs;
-
-        $this->assertNotEmpty($svgs);
-        $count = count($svgs);
-        $this->assertEquals(4, $count);
-
-        // Filter is cleaned up by tearDown() — no need to remove it here.
     }
 
     /**

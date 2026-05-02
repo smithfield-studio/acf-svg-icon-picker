@@ -61,31 +61,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         ];
         $this->l10n = ['error' => __('Error!', 'acf-svg-icon-picker')];
         $this->path_suffix = apply_filters('acf_svg_icon_picker_folder', 'icons/');
-        $this->path_suffix = apply_filters_deprecated(
-            'acf_icon_path_suffix',
-            [$this->path_suffix],
-            '4.0.0',
-            'acf_svg_icon_picker_folder',
-        );
 
-        apply_filters_deprecated(
-            'acf_icon_path',
-            [''],
-            '4.0.0',
-            '',
-            'acf_icon_path filter is no longer in use, please check the docs of ACF SVG Icon Picker Field',
-        ) . $this->path_suffix;
-        apply_filters_deprecated(
-            'acf_icon_url',
-            [''],
-            '4.0.0',
-            '',
-            'acf_icon_url filter is no longer in use, please check the docs of ACF SVG Icon Picker Field',
-        ) . $this->path_suffix;
-
-        /**
-         * Check if the custom icon location is set by filter and if not, check the theme directories for icons.
-         */
+        // Custom location takes precedence; fall back to scanning the active
+        // theme dirs (parent + child).
         $svgs = $this->check_priority_dir();
         $this->svgs = empty($svgs) ? $this->check_theme_dirs() : $svgs;
 
@@ -93,18 +71,20 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     }
 
     /**
-     * Method that checks if the custom icon location is set by filter.
+     * Build $svgs (and $groups, when applicable) from the
+     * `acf_svg_icon_picker_custom_location` filter result.
      *
-     * The filter may return either a single location ([ 'path' => …, 'url' => … ])
-     * or a list of locations to merge ([ [ 'path' => …, 'url' => …, 'name' => … ], … ]).
-     * When multiple locations are provided the picker UI groups them by `name`.
+     * Single `{path, url}` → flat, slug-keyed $svgs (back-compat).
+     * List of locations → composite-keyed (`groupkey.slug`) $svgs + $groups.
+     * Single location with `group_by_subdir => true` → composite-keyed,
+     *   one group per top-level subdir.
      *
      * @return array<string, array<string, mixed>>
      */
     private function check_priority_dir(): array {
         $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
 
-        if (false === $filter_result) {
+        if ($filter_result === false) {
             return [];
         }
 
@@ -151,7 +131,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             // the slugified name, then a deterministic index.
             $raw_key = $location['key'] ?? $group_name;
             $group_key = sanitize_title($raw_key);
-            if ('' === $group_key) {
+            if ($group_key === '') {
                 $group_key = "group-{$i}";
             }
 
@@ -188,7 +168,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * group name; sanitised slug becomes the group key.
      *
      * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location Location config.
-     * @param array<string, array<string, mixed>>                                                   $svgs     Reference: flat svgs dict (slug-keyed).
+     * @param array<string, array<string, mixed>>                                                   $svgs     Reference: composite-keyed svgs dict (`subdirslug.iconslug`).
      * @param array<int, array<string, mixed>>                                                      $groups   Reference: groups list to append into.
      */
     private function collect_subdir_groups(array $location, array &$svgs, array &$groups): void {
@@ -200,11 +180,11 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         }
 
         $scan = scandir($base_path);
-        $entries = false === $scan
+        $entries = $scan === false
             ? []
             : array_filter(
                 $scan,
-                static fn($entry) => '.' !== $entry && '..' !== $entry && is_dir("{$base_path}/{$entry}"),
+                static fn($entry) => $entry !== '.' && $entry !== '..' && is_dir("{$base_path}/{$entry}"),
             );
 
         foreach ($entries as $subdir) {
@@ -256,9 +236,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $svgs = $this->svg_collector($parent_theme_path, $parent_theme_url);
 
         if ($parent_theme_path !== $child_theme_path) {
-            $child_svgs = $this->svg_collector($child_theme_path, $child_theme_url);
-            $svgs = array_merge($svgs, $child_svgs);
-            $svgs = array_unique($svgs, SORT_REGULAR);
+            // array_merge dedupes by slug because $svgs is slug-keyed and the
+            // child entries (run second) overwrite parent entries on collision.
+            $svgs = array_merge($svgs, $this->svg_collector($child_theme_path, $child_theme_url));
         }
 
         return $svgs;
@@ -270,8 +250,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @param array<string, mixed> $field the field array
      */
     public function render_field($field): void {
-        $saved_value = '' !== $field['value'] ? $field['value'] : $field['initial_value'];
-        $icon = is_string($saved_value) && '' !== $saved_value ? $this->get_icon_data($saved_value) : null;
+        $saved_value = $field['value'] !== '' ? $field['value'] : $field['initial_value'];
+        $icon = is_string($saved_value) && $saved_value !== '' ? $this->get_icon_data($saved_value) : null;
 
         $allowed_groups = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
             ? array_values(array_filter($field['allowed_groups'], 'is_string'))
@@ -307,7 +287,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         if (count($this->groups) > 0) {
             $choices = [];
             foreach ($this->groups as $group) {
-                $choices[$group['key']] = '' !== $group['name'] ? $group['name'] : $group['key'];
+                $choices[$group['key']] = $group['name'] !== '' ? $group['name'] : $group['key'];
             }
 
             acf_render_field_setting($field, [
@@ -334,7 +314,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @return mixed                    $value we return.
      */
     public function format_value(mixed $value, mixed $post_id, $field) {
-        if ('icon' === $field['return_format'] && is_string($value) && '' !== $value) {
+        if ($field['return_format'] === 'icon' && is_string($value) && $value !== '') {
             return get_svg_icon($value);
         }
 
@@ -447,12 +427,12 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         }
 
         $entries = scandir($path);
-        if (false === $entries) {
+        if ($entries === false) {
             return [];
         }
 
         $found_files = array_filter($entries, static function ($file) {
-            return 'svg' === pathinfo($file, PATHINFO_EXTENSION);
+            return pathinfo($file, PATHINFO_EXTENSION) === 'svg';
         });
 
         if (empty($found_files)) {
@@ -484,7 +464,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @return array<string, mixed>
      */
     public function get_icon_data(string $key): array {
-        if (!empty($this->svgs[$key])) {
+        if (isset($this->svgs[$key])) {
             return $this->svgs[$key];
         }
 
@@ -501,15 +481,13 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
         // Legacy_key fallback handles much older values that stored the
         // human-readable "icon name" form ("arrow down" vs "arrow-down").
-        $icon = array_filter($this->svgs, static function ($svg) use ($key) {
-            return $svg['legacy_key'] === $key;
-        });
-
-        if (empty($icon)) {
-            return [];
+        foreach ($this->svgs as $svg) {
+            if (isset($svg['legacy_key']) && $svg['legacy_key'] === $key) {
+                return $svg;
+            }
         }
 
-        return reset($icon);
+        return [];
     }
 
     /**

@@ -102,10 +102,10 @@ function get_svg_icon_uri(string $icon_name): string {
 
     if (!empty($locations)) {
         $resolved = resolve_in_locations($locations, $icon_name);
-        return null === $resolved ? '' : $resolved['url'];
+        return $resolved === null ? '' : $resolved['url'];
     }
 
-    if ('' === get_svg_icon_path($icon_name)) {
+    if (get_svg_icon_path($icon_name) === '') {
         return '';
     }
 
@@ -126,7 +126,7 @@ function get_svg_icon_path(string $icon_name): string {
 
     if (!empty($locations)) {
         $resolved = resolve_in_locations($locations, $icon_name);
-        return null === $resolved ? '' : $resolved['path'];
+        return $resolved === null ? '' : $resolved['path'];
     }
 
     $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
@@ -157,7 +157,7 @@ function resolve_in_locations(array $locations, string $icon_name): ?array {
         [$group_key, $slug] = explode('.', $icon_name, 2);
         foreach ($locations as $location) {
             $resolved = resolve_icon_in_location($location, $slug, $group_key);
-            if (null !== $resolved) {
+            if ($resolved !== null) {
                 return $resolved;
             }
         }
@@ -165,7 +165,7 @@ function resolve_in_locations(array $locations, string $icon_name): ?array {
 
     foreach ($locations as $location) {
         $resolved = resolve_icon_in_location($location, $icon_name);
-        if (null !== $resolved) {
+        if ($resolved !== null) {
             return $resolved;
         }
     }
@@ -191,11 +191,11 @@ function resolve_icon_in_location(array $location, string $icon_name, ?string $g
     $base_path = rtrim($location['path'], '/\\');
     $base_url = trailingslashit($location['url']);
 
-    if ('' === $base_path) {
+    if ($base_path === '') {
         return null;
     }
 
-    if (null !== $group_key_filter) {
+    if ($group_key_filter !== null) {
         if (!empty($location['group_by_subdir'])) {
             $candidate = "{$base_path}/{$group_key_filter}/{$icon_name}.svg";
             if (file_exists($candidate)) {
@@ -221,14 +221,14 @@ function resolve_icon_in_location(array $location, string $icon_name, ?string $g
         ];
     }
 
-    if (null !== $group_key_filter || empty($location['group_by_subdir']) || !is_dir($base_path)) {
+    if ($group_key_filter !== null || empty($location['group_by_subdir']) || !is_dir($base_path)) {
         return null;
     }
 
     $entries = scandir($base_path);
-    $subdirs = false === $entries
+    $subdirs = $entries === false
         ? []
-        : array_filter($entries, fn($entry) => '.' !== $entry && '..' !== $entry && is_dir("{$base_path}/{$entry}"));
+        : array_filter($entries, fn($entry) => $entry !== '.' && $entry !== '..' && is_dir("{$base_path}/{$entry}"));
 
     foreach ($subdirs as $subdir) {
         $candidate = "{$base_path}/{$subdir}/{$icon_name}.svg";
@@ -253,11 +253,5 @@ function resolve_icon_in_location(array $location, string $icon_name, ?string $g
 function get_svg_icon(string $icon_name): string {
     $path = get_svg_icon_path($icon_name);
 
-    if (!$path) {
-        return '';
-    }
-
-    $contents = file_get_contents($path);
-
-    return false === $contents ? '' : $contents;
+    return $path === '' ? '' : (file_get_contents($path) ?: '');
 }

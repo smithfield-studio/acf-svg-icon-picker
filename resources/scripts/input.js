@@ -201,11 +201,12 @@
     // field's saved allowed_groups no longer match the live config.
     const groupsConfigured = Array.isArray(groups) && groups.length > 0;
     const useAllowlist = groupsConfigured && activeAllowedGroups;
-    const visibleGroups = groupsConfigured
-      ? useAllowlist
+    let visibleGroups = [];
+    if (groupsConfigured) {
+      visibleGroups = useAllowlist
         ? groups.filter((g) => activeAllowedGroups.includes(g.key))
-        : groups
-      : [];
+        : groups;
+    }
 
     const allowedKeySet = useAllowlist
       ? new Set(visibleGroups.flatMap((g) => g.icons || []))
