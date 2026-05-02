@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Icon tiles are real `<button>` elements** with `aria-label` — focusable, keyboard-activatable, screen-reader-friendly.
 - Picker grid uses `grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))`; tiles use `aspect-ratio: 1` and reflow with popup width. Popup itself sizes to `clamp(320px, 75vw, 1200px) × clamp(400px, 75vh, 900px)`.
 - Popup header is a single compact row (title + search + close); trigger selector enlarged to 70px.
-- PHPStan raised from level 5 → 9 (max for 1.x); strict array shape types throughout.
+- PHPStan upgraded to 2.x and raised to level 10 (max). Strict array-shape types and `is_string` guards on filter results throughout.
 
 ### Fixed
 
@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `.acf-svg-icon-picker__popup-overlay` wrapper element — replaced by native `<dialog>` + `::backdrop`. The old z-index workaround is no longer needed (dialogs opened with `showModal()` live in the browser's top-layer).
 - Deprecated filters `acf_icon_path`, `acf_icon_url`, and `acf_icon_path_suffix` (deprecated since 4.0.0). Use `acf_svg_icon_picker_folder` for the icon folder; the other two had no effect and were emitting notices only.
+- Global constants `ACF_SVG_ICON_PICKER_VERSION`, `ACF_SVG_ICON_PICKER_URL`, and `ACF_SVG_ICON_PICKER_PATH`. They were never documented as public API. The version now lives on the field class as `ACF_Field_Svg_Icon_Picker::VERSION`; URL/path are derived inline via `plugin_dir_url(__FILE__)` / `plugin_dir_path(__FILE__)`.
 - PHPCS / WPCS / 10up ruleset / `phpcompatibility/php-compatibility` — replaced by [Mago](https://github.com/carthage-software/mago) for PHP formatting.
 - ESLint / Stylelint — replaced by [Oxfmt + Oxlint](https://github.com/oxc-project/oxc).
 

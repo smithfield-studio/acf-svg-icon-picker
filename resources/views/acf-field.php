@@ -1,3 +1,17 @@
+<?php
+
+/**
+ * @var array<string, mixed>      $field
+ * @var string                    $saved_value
+ * @var array<string, mixed>|null $icon
+ * @var list<string>              $allowed_groups
+ */
+
+// Narrow extracted values to their expected types so the markup below stays
+// declarative and PHPStan can verify the esc_*() calls.
+$field_name = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
+$icon_url = isset($icon['url']) && is_string($icon['url']) ? $icon['url'] : '';
+?>
 <div
 	class="acf-svg-icon-picker"
 	<?php if (!empty($allowed_groups)) { ?>
@@ -10,16 +24,16 @@
 			class="acf-svg-icon-picker__icon"
 			aria-label="<?php esc_attr_e('Choose icon', 'acf-svg-icon-picker'); ?>"
 		>
-			<?php if (!empty($icon['url'])) { ?>
-				<img src="<?php echo esc_url($icon['url']); ?>" alt="" />
+			<?php if ($icon_url !== '') { ?>
+				<img src="<?php echo esc_url($icon_url); ?>" alt="" />
 			<?php } else { ?>
 				<span aria-hidden="true">&plus;</span>
 			<?php } ?>
 		</button>
 		<input
 			type="hidden"
-			name="<?php echo esc_attr($field['name'] ?? ''); ?>"
-			value="<?php echo esc_attr($saved_value ?? ''); ?>"
+			name="<?php echo esc_attr($field_name); ?>"
+			value="<?php echo esc_attr($saved_value); ?>"
 			readonly
 		/>
 	</div>

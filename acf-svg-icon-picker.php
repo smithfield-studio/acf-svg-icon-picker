@@ -22,15 +22,6 @@ namespace SmithfieldStudio\AcfSvgIconPicker;
 defined('ABSPATH') || exit();
 
 /**
- * Change this version number and the version in the
- * docblock above when releasing a new version of this plugin.
- */
-define('ACF_SVG_ICON_PICKER_VERSION', '5.0.0');
-
-define('ACF_SVG_ICON_PICKER_URL', plugin_dir_url(__FILE__));
-define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));
-
-/**
  * Include SVG Icon Picker field type.
  */
 function include_field_types(): void {
@@ -110,6 +101,9 @@ function get_svg_icon_uri(string $icon_name): string {
     }
 
     $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
+    if (!is_string($folder)) {
+        $folder = 'icons/';
+    }
 
     return get_theme_file_uri("{$folder}{$icon_name}.svg");
 }
@@ -130,6 +124,9 @@ function get_svg_icon_path(string $icon_name): string {
     }
 
     $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
+    if (!is_string($folder)) {
+        $folder = 'icons/';
+    }
     $file_path = get_theme_file_path("{$folder}{$icon_name}.svg");
 
     if (!file_exists($file_path)) {
