@@ -188,7 +188,9 @@
     }
 
     if (!svgs || Object.keys(svgs).length === 0) {
-      container.innerHTML = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
+      // noIconsMsg is pre-translated and already contains a `<code>` tag —
+      // intentionally not escaped.
+      container.innerHTML = `<p>${acfSvgIconPicker.noIconsMsg}</p>`;
       return;
     }
 
@@ -262,38 +264,20 @@
   }
 
   function renderPopup() {
-    const titleId = 'acfsip-popup-title';
-    const filterId = 'acfsip-popup-filter';
-
     // Native <dialog> handles focus trap, Esc to close, focus restoration, and
     // making the page-behind inert when opened with .showModal(). The browser
     // also implies role="dialog" and aria-modal="true" — no need to set them.
-    dialogEl = document.createElement('dialog');
-    dialogEl.className = 'acf-svg-icon-picker__popup';
-    dialogEl.setAttribute('aria-labelledby', titleId);
-    dialogEl.innerHTML = `
-      <div class="acf-svg-icon-picker__popup-header">
-        <h2 id="${titleId}">${escapeHtml(acfSvgIconPicker.msgs.title)}</h2>
-        <label class="screen-reader-text" for="${filterId}">${escapeHtml(acfSvgIconPicker.msgs.filter)}</label>
-        <input
-          class="acf-svg-icon-picker__filter"
-          type="search"
-          id="${filterId}"
-          placeholder="${escapeHtml(acfSvgIconPicker.msgs.filter)}"
-          autocomplete="off"
-        />
-        <button
-          type="button"
-          class="acf-svg-icon-picker__popup-close"
-          aria-label="${escapeHtml(acfSvgIconPicker.msgs.close)}"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
-        </button>
-      </div>
-      <div class="acf-svg-icon-picker__popup-contents">
-        <!-- Icons rendered here -->
-      </div>
-    `;
+    // Shell markup + i18n strings live in the PHP-rendered <template> so we
+    // can clone instead of building innerHTML by hand.
+    const template = document.getElementById('acfsip-dialog-template');
+    if (!template) {
+      return;
+    }
+    const fragment = template.content.cloneNode(true);
+    dialogEl = fragment.querySelector('dialog');
+    if (!dialogEl) {
+      return;
+    }
 
     document.body.appendChild(dialogEl);
     dialogEl.showModal();

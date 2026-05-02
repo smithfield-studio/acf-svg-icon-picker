@@ -267,7 +267,8 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
-     * Multi-location filter: builds a group per location, in order.
+     * Multi-location filter: builds a group per location, in order, and keys
+     * $svgs by composite `groupkey.slug` so cross-group slugs don't collide.
      */
     public function test_multi_location_groups_populated() {
         switch_theme('test-theme');
@@ -294,26 +295,30 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertCount(2, $plugin->groups);
         $this->assertEquals('brand', $plugin->groups[0]['key']);
         $this->assertEquals('Brand', $plugin->groups[0]['name']);
-        $this->assertContains('discord', $plugin->groups[0]['icons']);
+        $this->assertContains('brand.discord', $plugin->groups[0]['icons']);
         $this->assertEquals('social', $plugin->groups[1]['key']);
-        $this->assertContains('facebook', $plugin->groups[1]['icons']);
+        $this->assertContains('social.facebook', $plugin->groups[1]['icons']);
     }
 
     /**
-     * Multi-location: $plugin->svgs stays a flat dict (BC for get_icon_data etc).
+     * Multi-location: $svgs is keyed by composite (`groupkey.slug`); each
+     * entry still carries the bare slug under `entry['key']` for back-compat
+     * lookups in get_icon_data().
      */
-    public function test_multi_location_flat_svgs_still_populated() {
+    public function test_multi_location_svgs_use_composite_keys() {
         switch_theme('test-theme');
 
         add_filter('acf_svg_icon_picker_custom_location', function () {
             return [
                 [
                     'name' => 'Brand',
+                    'key' => 'brand',
                     'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
                     'url' => content_url() . '/themes/test-theme/icons/',
                 ],
                 [
                     'name' => 'Social',
+                    'key' => 'social',
                     'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
                     'url' => content_url() . '/themes/test-theme/custom-icons/',
                 ],
@@ -322,28 +327,31 @@ class TestPlugin extends \WP_UnitTestCase {
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
-        // 5 brand + 3 social = 8 total, no collisions across these dirs.
+        // 5 brand + 3 social = 8 total (no cross-group slug clashes here).
         $this->assertCount(8, $plugin->svgs);
-        $this->assertArrayHasKey('discord', $plugin->svgs);
-        $this->assertArrayHasKey('facebook', $plugin->svgs);
+        $this->assertArrayHasKey('brand.discord', $plugin->svgs);
+        $this->assertArrayHasKey('social.facebook', $plugin->svgs);
+        $this->assertSame('discord', $plugin->svgs['brand.discord']['key']);
     }
 
     /**
-     * Slug collisions across locations: first match wins; second occurrence
-     * is not registered into either the flat dict or the second group.
+     * Same slug in two groups co-exists under distinct composite keys; both
+     * appear in $svgs and each lands in its own group's icons[].
      */
-    public function test_multi_location_collision_first_wins() {
+    public function test_multi_location_same_slug_distinct_under_composite() {
         switch_theme('test-theme');
 
         add_filter('acf_svg_icon_picker_custom_location', function () {
             return [
                 [
                     'name' => 'Parent',
+                    'key' => 'parent',
                     'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
                     'url' => content_url() . '/themes/test-theme/icons/',
                 ],
                 [
                     'name' => 'Child',
+                    'key' => 'child',
                     'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
                     'url' => content_url() . '/themes/test-child-theme/icons/',
                 ],
@@ -352,13 +360,101 @@ class TestPlugin extends \WP_UnitTestCase {
 
         $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
 
-        // `discord` exists in both. The first location's URL should win.
-        $discord = $plugin->svgs['discord'];
-        $this->assertStringContainsString('/test-theme/icons/discord.svg', $discord['url']);
+        // Both `discord` icons are addressable via their composite keys.
+        $this->assertArrayHasKey('parent.discord', $plugin->svgs);
+        $this->assertArrayHasKey('child.discord', $plugin->svgs);
+        $this->assertStringContainsString('/test-theme/icons/discord.svg', $plugin->svgs['parent.discord']['url']);
+        $this->assertStringContainsString('/test-child-theme/icons/discord.svg', $plugin->svgs['child.discord']['url']);
+        $this->assertContains('parent.discord', $plugin->groups[0]['icons']);
+        $this->assertContains('child.discord', $plugin->groups[1]['icons']);
+    }
 
-        // First group contains discord; second group does not.
-        $this->assertContains('discord', $plugin->groups[0]['icons']);
-        $this->assertNotContains('discord', $plugin->groups[1]['icons']);
+    /**
+     * Composite save value resolves to the matching group only — `parent.discord`
+     * must not return the child theme's discord even though it also exists.
+     */
+    public function test_get_svg_icon_path_composite_targets_specific_group() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', function () {
+            return [
+                [
+                    'name' => 'Parent',
+                    'key' => 'parent',
+                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                    'url' => content_url() . '/themes/test-theme/icons/',
+                ],
+                [
+                    'name' => 'Child',
+                    'key' => 'child',
+                    'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
+                    'url' => content_url() . '/themes/test-child-theme/icons/',
+                ],
+            ];
+        });
+
+        $parent_path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('parent.discord');
+        $this->assertStringEndsWith('/test-theme/icons/discord.svg', $parent_path);
+
+        $child_path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('child.discord');
+        $this->assertStringEndsWith('/test-child-theme/icons/discord.svg', $child_path);
+    }
+
+    /**
+     * Bare-slug back-compat: values saved before composite keys existed (or
+     * by a sibling field in flat-mode) still resolve. First match wins.
+     */
+    public function test_get_svg_icon_path_bare_slug_back_compat() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', function () {
+            return [
+                [
+                    'name' => 'Parent',
+                    'key' => 'parent',
+                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                    'url' => content_url() . '/themes/test-theme/icons/',
+                ],
+                [
+                    'name' => 'Child',
+                    'key' => 'child',
+                    'path' => WP_CONTENT_DIR . '/themes/test-child-theme/icons/',
+                    'url' => content_url() . '/themes/test-child-theme/icons/',
+                ],
+            ];
+        });
+
+        $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('discord');
+        $this->assertStringEndsWith('/test-theme/icons/discord.svg', $path);
+    }
+
+    /**
+     * get_icon_data() resolves both composite and bare-slug forms.
+     */
+    public function test_get_icon_data_resolves_composite_and_bare() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', function () {
+            return [
+                [
+                    'name' => 'Brand',
+                    'key' => 'brand',
+                    'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                    'url' => content_url() . '/themes/test-theme/icons/',
+                ],
+            ];
+        });
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $composite = $plugin->get_icon_data('brand.discord');
+        $this->assertNotEmpty($composite);
+        $this->assertSame('discord', $composite['key']);
+
+        // Bare slug still finds the icon via the entry-key fallback.
+        $bare = $plugin->get_icon_data('discord');
+        $this->assertNotEmpty($bare);
+        $this->assertSame('discord', $bare['key']);
     }
 
     /**

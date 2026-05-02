@@ -118,7 +118,7 @@ Behaviour:
 - A single `{ path, url }` array still works (back-compatible) and renders flat without a group heading.
 - A list of locations renders with group headings — even if only one location ends up populated.
 - Empty locations (no SVGs found) are silently skipped.
-- Slug collisions across locations are resolved first-match-wins.
+- In grouped mode, saved values are stored as `groupkey.slug` (e.g. `brand.discord`), so the same slug can appear in multiple groups without colliding. Bare slugs saved by older versions still resolve via a first-match scan, so existing data keeps working. The `get_svg_icon*()` helpers accept both forms.
 
 #### Auto-grouping by subdirectory
 

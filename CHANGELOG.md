@@ -6,58 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [4.4.0] — 2026-05-01
+## [5.0.0]
 
 ### Added
 
-- **Multiple icon locations** — `acf_svg_icon_picker_custom_location` now accepts a list of `{ path, url, name?, key? }` arrays. Locations render as named groups in the picker UI. Single `{ path, url }` shape remains supported (back-compatible).
-- **Auto-grouping by subdirectory** — set `'group_by_subdir' => true` on a single location to expose each top-level subfolder as its own group (subfolder name becomes the heading).
-- **Per-field group filter** — closes [#32](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/32). New `allowed_groups` field setting (rendered as a checkbox group of available group keys) restricts the picker to a chosen subset of groups for that specific field. Empty / unset = show all (back-compatible).
-- **Arrow-key navigation** in the icon grid (Left/Right step one tile, Up/Down jump a row, Home/End jump to ends) with roving tabindex.
-- **Subtle scale-up transition** on icon tile hover and keyboard focus, with `prefers-reduced-motion` opt-out.
-- New helper `resolve_icon_in_location()` for resolving an icon within a single location config (honours subdir mode).
-- New internal helper `normalize_custom_locations()` shared between the field class and helper functions.
-- New public property `$plugin->groups` exposing the grouping metadata.
-- Editor JS exposes `acfSvgIconPicker.groups` alongside the existing `svgs` data.
-- [Oxfmt](https://github.com/oxc-project/oxc) + [Oxlint](https://github.com/oxc-project/oxc) for JS / CSS / JSON formatting and JS linting (Rust-based, sub-second). Replaces ESLint + Stylelint.
-- [Mago](https://github.com/carthage-software/mago) (`carthage-software/mago`) for PHP formatting. Replaces PHPCS.
-- New `.github/workflows/code-quality.yml` running PHPStan, Mago format check, Oxfmt format check, and Oxlint on every push to `main` and PR (in addition to the existing PHPUnit workflow).
-- **PHPStan strictness raised from level 5 → level 9** (max for PHPStan 1.x). Required adding precise array shape types (`array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}`) to the location-config contract, narrowing `mixed` filter inputs with explicit `is_string` checks, and handling the `false` return from `file_get_contents`/`scandir`.
-- **WP admin colour scheme integration** — the picker's focus ring now pulls from `--wp-admin-theme-color`, so it matches the user's chosen admin colour scheme out of the box.
-- **RTL support** — block-axis margins, paddings, and borders use logical properties (`margin-block-end`, `padding-inline`, `border-block-end`, `min-inline-size`) so right-to-left languages render correctly.
+- **Multiple icon locations** — `acf_svg_icon_picker_custom_location` now accepts a list of `{ path, url, name?, key? }` arrays. Each location renders as a named group in the picker UI. The single `{ path, url }` shape still works (renders flat).
+- **Auto-grouping by subdirectory** — set `'group_by_subdir' => true` on a single location to expose each top-level subfolder as its own group.
+- **Per-field group filter** — new `allowed_groups` field setting restricts a specific field to a chosen subset of the configured groups (closes [#32](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/32)).
+- **Arrow-key navigation** in the icon grid with roving tabindex (Left/Right step a tile, Up/Down jump a row, Home/End jump to ends).
+- PHP 8.1 minimum, declared via `composer.json` so install fails on older versions instead of silently breaking.
 
 ### Changed
 
-- **Picker popup is now a native `<dialog>` element.** Browser provides focus trap, Escape-to-close, focus restoration, and inert background page automatically. Removes the manual focus-trap and overlay JS.
-- **Vanilla JS picker code.** Removed jQuery from the picker's own logic — only the ACF integration point still touches jQuery (because `acf.get_fields()` returns a jQuery collection). All DOM work now uses native `addEventListener`, `closest`, `classList`, `dispatchEvent`, etc.
-- **Icon tiles are real `<button>` elements** (`<li><button data-svg>`), not clickable list items. They're focusable, keyboard-activatable, and have `aria-label` for screen readers.
-- Picker grid uses CSS `grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))` so columns reflow with the popup width. Tiles are `aspect-ratio: 1` for a uniform grid; icons normalised via `width: 50%; aspect-ratio: 1; object-fit: contain`.
-- Popup sizing is responsive: `clamp(320px, 75vw, 1200px) × clamp(400px, 75vh, 900px)` with a 95v* viewport cap.
-- Popup header is a single compact row: title, search input (flex-grow), close button.
-- Trigger selector enlarged from 50px → 70px circle; remove button now centres beneath the trigger via a flex-column wrapper.
-- Group headings render whenever the filter returns a list of locations (or a single location with `group_by_subdir`), even if only one ends up populated. Empty groups are silently hidden.
-- `acf_svg_icon_picker_custom_location` filter callbacks may use the new optional `name` / `key` / `group_by_subdir` keys per location.
-- Composer `composer.json` now declares `"require": { "php": ">=8.1" }` so installation enforces the same minimum the plugin header advertises.
+- **Save format in grouped mode is now `groupkey.slug`** (e.g. `nucleo.arrow-down`). Bare slugs (`arrow-down`) saved by older versions still resolve via a first-match scan, so existing data keeps working. Flat-mode (single `{ path, url }`) save format is unchanged.
+- **Picker popup is now a native `<dialog>`.** Browser supplies focus trap, Esc-to-close, focus restoration, and inert background page; removes the manual focus-trap and overlay JS.
+- **Vanilla JS picker.** jQuery dropped from the picker's own logic; only the ACF integration point still touches it (`acf.get_fields()` returns a jQuery collection).
+- **Icon tiles are real `<button>` elements** with `aria-label` — focusable, keyboard-activatable, screen-reader-friendly.
+- Picker grid uses `grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))`; tiles use `aspect-ratio: 1` and reflow with popup width. Popup itself sizes to `clamp(320px, 75vw, 1200px) × clamp(400px, 75vh, 900px)`.
+- Popup header is a single compact row (title + search + close); trigger selector enlarged to 70px.
+- PHPStan raised from level 5 → 9 (max for 1.x); strict array shape types throughout.
 
 ### Fixed
 
-- **Pressing Enter anywhere in the admin opening the icon picker** — fixes [#34](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/34). The trigger and remove buttons in the field view template were missing `type="button"`, so they defaulted to `type="submit"` and intercepted Enter-key form submissions inside Flexible Content (and any other form context). Both now have explicit `type="button"`.
-- `get_svg_icon_uri()` now returns the URL of the matching custom location instead of always falling back to `get_theme_file_uri()`. Pre-fix the helper returned theme-relative URLs even when icons were stored elsewhere via the custom-location filter — those URLs typically 404'd.
-- Numerous a11y issues with the picker popup: missing dialog role, no focus trap, no Escape handler, no focus restoration, unlabelled search input, unlabelled close button, list items not keyboard-focusable.
-- Pre-existing `@var strin` typo on `$path_suffix` corrected to `string`.
+- **Pressing Enter anywhere in the admin opening the picker** ([#34](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/34)) — the trigger and remove buttons were missing `type="button"`, so they defaulted to `type="submit"` and intercepted Enter inside Flexible Content (and any other form context).
+- `get_svg_icon_uri()` returns the matching custom-location URL instead of always falling back to `get_theme_file_uri()` (which 404'd whenever icons lived outside the theme).
+- Numerous a11y gaps in the popup: missing dialog role, no focus trap, no Esc handler, no focus restoration, unlabelled search input and close button, list items not keyboard-focusable.
 
 ### Removed
 
-- `.acf-svg-icon-picker__popup-overlay` wrapper element (replaced by native `<dialog>` + `::backdrop`). The previous z-index workaround is no longer necessary because dialogs opened with `showModal()` live in the browser's top-layer.
-- Internal `$path` and `$url` private properties on the field class — they were write-only after the multi-location refactor and provided no external value.
-- PHPCS, the 10up PHPCS ruleset, WPCS, and `phpcompatibility/php-compatibility` dev dependencies — replaced by Mago for PHP formatting.
-- ESLint and Stylelint dev dependencies — replaced by Oxfmt + Oxlint.
-- `.phpcs.xml.dist`, `.eslintrc.json`, and `.stylelintrc.json` config files (no longer used).
+- `.acf-svg-icon-picker__popup-overlay` wrapper element — replaced by native `<dialog>` + `::backdrop`. The old z-index workaround is no longer needed (dialogs opened with `showModal()` live in the browser's top-layer).
+- PHPCS / WPCS / 10up ruleset / `phpcompatibility/php-compatibility` — replaced by [Mago](https://github.com/carthage-software/mago) for PHP formatting.
+- ESLint / Stylelint — replaced by [Oxfmt + Oxlint](https://github.com/oxc-project/oxc).
 
 ### Compatibility notes
 
-- **DOM hooks for the picker UI changed.** If you target `.acf-svg-icon-picker__popup-overlay` or `.acf-svg-icon-picker__popup ul li[data-svg]` in custom CSS, replace them with `.acf-svg-icon-picker__popup` and `.acf-svg-icon-picker__option` respectively.
-- **Browser baseline implicitly raised** by the move to native `<dialog>`: Chrome 37+, Firefox 98+ (Mar 2022), Safari 15.4+ (Mar 2022).
+- **DOM hooks for the picker UI changed.** If you target `.acf-svg-icon-picker__popup-overlay` or `.acf-svg-icon-picker__popup ul li[data-svg]` in custom CSS, switch to `.acf-svg-icon-picker__popup` and `.acf-svg-icon-picker__option`.
+- **Browser baseline implicitly raised** by the native `<dialog>` move: Chrome 37+, Firefox 98+, Safari 15.4+.
+- **Saved values may now be composite (`groupkey.slug`)** when the field is configured in grouped mode. Code that reads the field via `get_field()` and passes the result through `get_svg_icon*()` keeps working — the helpers parse both forms. Custom code that does its own slug → file lookup needs to handle the prefix.
 
 ## [4.3.1]
 

@@ -4,7 +4,7 @@
  * Plugin Name: Advanced Custom Fields: SVG Icon Picker
  * Plugin URI: https://github.com/smithfield-studio/acf-svg-icon-picker
  * Description: Allows you to pick an icon from a predefined list
- * Version: 4.4.0
+ * Version: 5.0.0
  * Author: Smithfield & Studio Lemon
  * Author URI: https://github.com/smithfield-studio/acf-svg-icon-picker/
  * Text Domain: acf-svg-icon-picker
@@ -25,7 +25,7 @@ defined('ABSPATH') || exit();
  * Change this version number and the version in the
  * docblock above when releasing a new version of this plugin.
  */
-define('ACF_SVG_ICON_PICKER_VERSION', '4.4.0');
+define('ACF_SVG_ICON_PICKER_VERSION', '5.0.0');
 
 define('ACF_SVG_ICON_PICKER_URL', plugin_dir_url(__FILE__));
 define('ACF_SVG_ICON_PICKER_PATH', plugin_dir_path(__FILE__));
@@ -98,17 +98,15 @@ function normalize_custom_locations(mixed $filter_result): array {
  * @return string The URI of the icon, empty string if the icon does not exist.
  */
 function get_svg_icon_uri(string $icon_name): string {
-    if ('' === get_svg_icon_path($icon_name)) {
-        return '';
-    }
-
     $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
 
-    foreach ($locations as $location) {
-        $resolved = resolve_icon_in_location($location, $icon_name);
-        if (null !== $resolved) {
-            return $resolved['url'];
-        }
+    if (!empty($locations)) {
+        $resolved = resolve_in_locations($locations, $icon_name);
+        return null === $resolved ? '' : $resolved['url'];
+    }
+
+    if ('' === get_svg_icon_path($icon_name)) {
+        return '';
     }
 
     $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
@@ -127,14 +125,8 @@ function get_svg_icon_path(string $icon_name): string {
     $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
 
     if (!empty($locations)) {
-        foreach ($locations as $location) {
-            $resolved = resolve_icon_in_location($location, $icon_name);
-            if (null !== $resolved) {
-                return $resolved['path'];
-            }
-        }
-
-        return '';
+        $resolved = resolve_in_locations($locations, $icon_name);
+        return null === $resolved ? '' : $resolved['path'];
     }
 
     $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
@@ -148,20 +140,77 @@ function get_svg_icon_path(string $icon_name): string {
 }
 
 /**
+ * Resolve a saved value (composite `groupkey.slug` or bare slug) to a
+ * { path, url } pair across a list of locations.
+ *
+ * Composite is tried first against the matching group only; bare slugs (and
+ * composites that don't resolve) fall back to a first-match scan across all
+ * locations — preserving back-compat with values saved before composite keys
+ * existed.
+ *
+ * @internal
+ * @param list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}> $locations
+ * @return array{path: string, url: string}|null
+ */
+function resolve_in_locations(array $locations, string $icon_name): ?array {
+    if (str_contains($icon_name, '.')) {
+        [$group_key, $slug] = explode('.', $icon_name, 2);
+        foreach ($locations as $location) {
+            $resolved = resolve_icon_in_location($location, $slug, $group_key);
+            if (null !== $resolved) {
+                return $resolved;
+            }
+        }
+    }
+
+    foreach ($locations as $location) {
+        $resolved = resolve_icon_in_location($location, $icon_name);
+        if (null !== $resolved) {
+            return $resolved;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Resolve an icon name to a { path, url } pair within a single location,
  * honouring `group_by_subdir`. Returns null when the icon is not found.
  *
+ * When `$group_key_filter` is non-null the lookup is constrained to that
+ * group: a top-level location must declare a matching `key` (or slugified
+ * `name`); a subdir-mode location only checks the matching subfolder.
+ *
  * @internal
- * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location  Location config.
- * @param string                                                                                 $icon_name Icon slug.
+ * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location          Location config.
+ * @param string                                                                                 $icon_name        Icon slug (without group prefix).
+ * @param string|null                                                                            $group_key_filter Optional group key to constrain the search to.
  * @return array{path: string, url: string}|null
  */
-function resolve_icon_in_location(array $location, string $icon_name): ?array {
+function resolve_icon_in_location(array $location, string $icon_name, ?string $group_key_filter = null): ?array {
     $base_path = rtrim($location['path'], '/\\');
     $base_url = trailingslashit($location['url']);
 
     if ('' === $base_path) {
         return null;
+    }
+
+    if (null !== $group_key_filter) {
+        if (!empty($location['group_by_subdir'])) {
+            $candidate = "{$base_path}/{$group_key_filter}/{$icon_name}.svg";
+            if (file_exists($candidate)) {
+                return [
+                    'path' => $candidate,
+                    'url' => "{$base_url}{$group_key_filter}/{$icon_name}.svg",
+                ];
+            }
+            return null;
+        }
+
+        $raw_key = $location['key'] ?? $location['name'] ?? '';
+        if (sanitize_title($raw_key) !== $group_key_filter) {
+            return null;
+        }
     }
 
     $flat_path = "{$base_path}/{$icon_name}.svg";
@@ -172,7 +221,7 @@ function resolve_icon_in_location(array $location, string $icon_name): ?array {
         ];
     }
 
-    if (empty($location['group_by_subdir']) || !is_dir($base_path)) {
+    if (null !== $group_key_filter || empty($location['group_by_subdir']) || !is_dir($base_path)) {
         return null;
     }
 

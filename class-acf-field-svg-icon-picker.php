@@ -145,21 +145,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 continue;
             }
 
-            // First-match wins on slug collisions across locations.
-            $new_keys = [];
-            foreach ($found as $key => $entry) {
-                if (isset($svgs[$key])) {
-                    continue;
-                }
-
-                $svgs[$key] = $entry;
-                $new_keys[] = $key;
-            }
-
-            if (empty($new_keys)) {
-                continue;
-            }
-
             $group_name = $location['name'] ?? '';
             // Always run the key through sanitize_title so user-supplied keys
             // can't break HTML id/data attributes downstream. Falls back to
@@ -170,10 +155,23 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 $group_key = "group-{$i}";
             }
 
+            // Composite keys (`groupkey.slug`) only when we're actually
+            // rendering groups — single `{path, url}` stays bare-keyed for
+            // back-compat with values saved by older versions.
+            $icon_keys = [];
+            foreach ($found as $bare_key => $entry) {
+                $key = $is_list_grouped ? "{$group_key}.{$bare_key}" : $bare_key;
+                if (isset($svgs[$key])) {
+                    continue;
+                }
+                $svgs[$key] = $entry;
+                $icon_keys[] = $key;
+            }
+
             $groups[] = [
                 'key' => $group_key,
                 'name' => $group_name,
-                'icons' => $new_keys,
+                'icons' => $icon_keys,
             ];
         }
 
@@ -216,24 +214,18 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 continue;
             }
 
-            $new_keys = [];
-            foreach ($found as $key => $entry) {
-                if (isset($svgs[$key])) {
-                    continue;
-                }
-
-                $svgs[$key] = $entry;
-                $new_keys[] = $key;
-            }
-
-            if (empty($new_keys)) {
-                continue;
+            $group_key = sanitize_title($subdir);
+            $composite_keys = [];
+            foreach ($found as $bare_key => $entry) {
+                $composite = "{$group_key}.{$bare_key}";
+                $svgs[$composite] = $entry;
+                $composite_keys[] = $composite;
             }
 
             $groups[] = [
-                'key' => sanitize_title($subdir),
+                'key' => $group_key,
                 'name' => ucwords(str_replace(['-', '_'], ' ', $subdir)),
-                'icons' => $new_keys,
+                'icons' => $composite_keys,
             ];
         }
     }
@@ -364,24 +356,28 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         );
         wp_enqueue_script('acf-input-svg-icon-picker');
 
-        wp_localize_script('acf-input-svg-icon-picker', 'acfSvgIconPicker', [
+        // Static markup (dialog shell, i18n strings) lives in the template
+        // printed by render_dialog_template(). Only the dynamic data — the
+        // icon dictionary, group list, and the empty-state message (rendered
+        // client-side when svgs is empty) — needs to ride in the script var.
+        $data = [
             'svgs' => $this->svgs,
             'groups' => $this->groups,
-            'columns' => 4,
-            'msgs' => [
-                'title' => esc_html__('Select an icon', 'acf-svg-icon-picker'),
-                'close' => esc_html__('close', 'acf-svg-icon-picker'),
-                'filter' => esc_html__('Start typing to filter icons', 'acf-svg-icon-picker'),
-                // translators: %s: path_suffix
-                'no_icons' => sprintf(
-                    __(
-                        'To add icons, add your svg files in the <code>/%s</code> folder in your theme.',
-                        'acf-svg-icon-picker',
-                    ),
-                    esc_attr($this->path_suffix),
+            // translators: %s: path_suffix
+            'noIconsMsg' => sprintf(
+                __(
+                    'To add icons, add your svg files in the <code>/%s</code> folder in your theme.',
+                    'acf-svg-icon-picker',
                 ),
-            ],
-        ]);
+                esc_attr($this->path_suffix),
+            ),
+        ];
+
+        wp_add_inline_script(
+            'acf-input-svg-icon-picker',
+            'var acfSvgIconPicker = ' . wp_json_encode($data) . ';',
+            'before',
+        );
 
         wp_register_style(
             'acf-input-svg-icon-picker',
@@ -390,6 +386,51 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             ACF_SVG_ICON_PICKER_VERSION,
         );
         wp_enqueue_style('acf-input-svg-icon-picker');
+
+        // add_action dedupes by callback identity, and a static guard inside
+        // render_dialog_template() ensures the markup is only emitted once
+        // even though input_admin_enqueue_scripts() runs per page-with-fields.
+        add_action('admin_footer', [$this, 'render_dialog_template']);
+    }
+
+    /**
+     * Print the picker dialog template into the admin footer once per page.
+     * JS clones template.content on open instead of building the shell via
+     * innerHTML, so static markup and i18n strings live in PHP.
+     */
+    public function render_dialog_template(): void {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+        ?>
+<template id="acfsip-dialog-template">
+	<dialog class="acf-svg-icon-picker__popup" aria-labelledby="acfsip-popup-title">
+		<div class="acf-svg-icon-picker__popup-header">
+			<h2 id="acfsip-popup-title"><?php esc_html_e('Select an icon', 'acf-svg-icon-picker'); ?></h2>
+			<label class="screen-reader-text" for="acfsip-popup-filter">
+				<?php esc_html_e('Start typing to filter icons', 'acf-svg-icon-picker'); ?>
+			</label>
+			<input
+				class="acf-svg-icon-picker__filter"
+				type="search"
+				id="acfsip-popup-filter"
+				placeholder="<?php esc_attr_e('Start typing to filter icons', 'acf-svg-icon-picker'); ?>"
+				autocomplete="off"
+			/>
+			<button
+				type="button"
+				class="acf-svg-icon-picker__popup-close"
+				aria-label="<?php esc_attr_e('close', 'acf-svg-icon-picker'); ?>"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
+			</button>
+		</div>
+		<div class="acf-svg-icon-picker__popup-contents"></div>
+	</dialog>
+</template>
+		<?php
     }
 
     /**
@@ -443,22 +484,32 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @return array<string, mixed>
      */
     public function get_icon_data(string $key): array {
-        $icon = !empty($this->svgs[$key]) ? $this->svgs[$key] : [];
-
-        // if no icon found in array keys, check legacy_key field
-        if (empty($icon)) {
-            $icon = array_filter($this->svgs, static function ($svg) use ($key) {
-                return $svg['legacy_key'] === $key;
-            });
-
-            if (empty($icon)) {
-                return [];
-            }
-
-            $icon = reset($icon);
+        if (!empty($this->svgs[$key])) {
+            return $this->svgs[$key];
         }
 
-        return $icon;
+        // Bare-slug back-compat: in grouped mode $svgs is composite-keyed, but
+        // values saved by older versions (or by a sibling field in flat mode)
+        // are bare slugs. svg_collector keeps `entry['key']` as the bare slug
+        // so we can still resolve them — first match wins, mirroring the
+        // pre-grouping collision behavior.
+        foreach ($this->svgs as $svg) {
+            if (isset($svg['key']) && $svg['key'] === $key) {
+                return $svg;
+            }
+        }
+
+        // Legacy_key fallback handles much older values that stored the
+        // human-readable "icon name" form ("arrow down" vs "arrow-down").
+        $icon = array_filter($this->svgs, static function ($svg) use ($key) {
+            return $svg['legacy_key'] === $key;
+        });
+
+        if (empty($icon)) {
+            return [];
+        }
+
+        return reset($icon);
     }
 
     /**
