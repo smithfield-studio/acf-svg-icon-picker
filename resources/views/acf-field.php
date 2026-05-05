@@ -26,8 +26,8 @@ $clear_label = __('Clear', 'acf-svg-icon-picker');
 
 // Path-style rendering of the saved slug for the missing-state error message.
 // Composite (`nucleo.fan`) becomes `nucleo/fan.svg`; bare slugs become
-// `<slug>.svg`. Honest framing: it's where we'd look in the configured icon
-// set, not an absolute filesystem path.
+// `<slug>.svg`. Indicative location within the configured icon set rather
+// than an absolute filesystem path.
 $missing_path = str_replace('.', '/', $saved_value) . '.svg';
 ?>
 <div

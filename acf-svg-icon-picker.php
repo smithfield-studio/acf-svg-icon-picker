@@ -34,8 +34,6 @@ const PLUGIN_FILE = __FILE__;
 // files. The composer.json `autoload` section is kept as IDE/PHPStan metadata
 // only.
 require_once __DIR__ . '/src/helpers.php';
-require_once __DIR__ . '/src/Concerns/ScansIcons.php';
-require_once __DIR__ . '/src/Concerns/BuildsGroups.php';
 require_once __DIR__ . '/src/Field.php';
 
 /**
