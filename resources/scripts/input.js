@@ -526,30 +526,29 @@
     iconsFilter.addEventListener('input', debounce(displayResults, 300));
   }
 
-  // MutationObserver as a fallback for fields rendered outside the ACF lifecycle
-  // (e.g. some block-editor flows). Skipped when ACF is loaded — its `ready
-  // append` action already calls initializeField for new fields, and watching
-  // every admin-page mutation on top of that is wasted work. Scoped to the
-  // admin wrapper rather than document.body for the same reason.
-  if (typeof acf === 'undefined' || typeof acf.add_action === 'undefined') {
-    const root = document.getElementById('wpwrap') || document.body;
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType !== 1) {
-            return;
-          }
-          if (node.matches?.('.acf-svg-icon-picker')) {
-            initializeField(node);
-          }
-          node.querySelectorAll?.('.acf-svg-icon-picker').forEach(initializeField);
-        });
+  // MutationObserver as a fallback for fields rendered outside the ACF
+  // lifecycle — block-editor flows where ACF doesn't fire `ready append` for
+  // dynamically-inserted fields. Runs alongside the ACF action; double-init
+  // is prevented by the `data-acfsipInitialized` flag in initializeField().
+  // Scoped to `#wpwrap` (the admin wrapper) so we're not watching mutations
+  // on the entire document.
+  const observerRoot = document.getElementById('wpwrap') || document.body;
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType !== 1) {
+          return;
+        }
+        if (node.matches?.('.acf-svg-icon-picker')) {
+          initializeField(node);
+        }
+        node.querySelectorAll?.('.acf-svg-icon-picker').forEach(initializeField);
       });
     });
+  });
 
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-    });
-  }
+  observer.observe(observerRoot, {
+    childList: true,
+    subtree: true,
+  });
 })();
