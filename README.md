@@ -38,7 +38,7 @@ Copy the `acf-svg-icon-picker` folder into `wp-content/plugins/` and activate.
 
 By default, the picker scans the active theme's `icons/` folder (parent + child). Drop SVG files in there and they appear in the picker grid.
 
-In your code, read field values via the helper functions — they handle both single-folder and multi-location setups, parent/child theme overrides, and composite group prefixes:
+In your code, read field values via the helper functions — they handle both single-folder and multi-location setups, parent/child theme overrides and groups:
 
 ```php
 use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri;
@@ -56,11 +56,11 @@ $icon_data = get_svg_icon_data($slug);  // struct: slug, url, path, title, group
 
 The field has a `return_format` setting:
 
-- `'value'` (default) — returns the slug. Pair with the helpers above.
-- `'icon'` — returns the SVG markup directly so `get_field()` is enough.
-- `'array'` — returns the same struct as `get_svg_icon_data()`, or `null` when the saved icon no longer resolves. Useful when a template wants the URL plus the title or group context in one call without reading the SVG from disk.
+- `'value'` (default): returns the slug. Pair with the helpers above.
+- `'icon'`: returns the SVG markup directly so `get_field()` is enough.
+- `'array'`: returns the same struct as `get_svg_icon_data()`, or `null` when the saved icon no longer resolves. Useful when a template wants the URL plus the title or group context in one call without reading the SVG from disk.
 
-> **Security note**: `get_svg_icon()` and `return_format = 'icon'` return the SVG file's contents verbatim — no sanitization. The plugin is built on the assumption that icons are committed to your theme/plugin and reviewed by you. **Do not point `acf_svg_icon_picker_custom_location` at a directory that accepts user uploads** (e.g. `wp-content/uploads/`) — a malicious editor could land XSS via an SVG `<script>` element. If you need that workflow, sanitize with [`enshrined/svg-sanitize`](https://github.com/darylldoyle/svg-sanitize) downstream of the helpers, or stay on `return_format = 'value'` and render `<img src>` against the URL only.
+> **Security note**: `get_svg_icon()` and `return_format = 'icon'` return the SVG file's contents verbatim — no sanitization. The plugin is built on the assumption that icons are committed to your theme/plugin and reviewed by you. **Do not point `acf_svg_icon_picker_custom_location` at a directory that accepts user uploads** (e.g. `wp-content/uploads/`) — a malicious editor could land XSS via an SVG `<script>` element. If you need that workflow, sanitize the svg data.
 
 ### With [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
