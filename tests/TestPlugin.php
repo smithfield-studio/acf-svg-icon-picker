@@ -521,6 +521,26 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * A custom-location filter is authoritative when set: an empty result is
+     * surfaced as "no icons" rather than silently falling back to scanning
+     * theme dirs and substituting whatever lives there.
+     */
+    public function test_custom_location_empty_does_not_fall_back_to_theme() {
+        // The active theme has icons/ files that would populate svgs if the
+        // fallback fired. The filter pointing at a missing path must override.
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/this-path-does-not-exist/',
+            'url' => content_url() . '/this-path-does-not-exist/',
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $this->assertSame([], $plugin->svgs);
+    }
+
+    /**
      * Locations whose dir has no SVGs are skipped from $groups entirely.
      */
     public function test_multi_location_empty_dir_skipped() {

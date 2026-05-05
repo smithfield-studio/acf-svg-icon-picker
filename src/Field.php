@@ -66,10 +66,12 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $path_suffix = apply_filters('acf_svg_icon_picker_folder', 'icons/');
         $this->path_suffix = is_string($path_suffix) ? $path_suffix : 'icons/';
 
-        // Custom location takes precedence; fall back to scanning the active
-        // theme dirs (parent + child).
+        // A custom location filter is authoritative when set: the picker uses
+        // it even when it resolves to no icons, so misconfigured paths surface
+        // as "no icons" rather than silently falling back to theme dirs and
+        // hiding the bug. We only fall back when the filter is unset.
         $svgs = $this->check_priority_dir();
-        $this->svgs = $svgs === [] ? check_theme_dirs($this->path_suffix) : $svgs;
+        $this->svgs = $svgs === null ? check_theme_dirs($this->path_suffix) : $svgs;
 
         parent::__construct();
     }
@@ -86,13 +88,18 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * Group disambiguation lives in `expand_locations_to_groups()` (helpers.php)
      * so the public API helpers resolve the same `groupkey.slug` shape.
      *
-     * @return array<string, array<string, mixed>>
+     * Returns `null` when no custom-location filter is set (signal to the
+     * caller to fall back to theme dirs). Returns an empty array when a
+     * filter is set but resolves to no icons — that's an authoritative
+     * "no icons" verdict, not a fallback trigger.
+     *
+     * @return array<string, array<string, mixed>>|null
      */
-    private function check_priority_dir(): array {
+    private function check_priority_dir(): ?array {
         $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
 
         if ($filter_result === false) {
-            return [];
+            return null;
         }
 
         // Group rendering is opt-in per the filter shape: a single { path, url }

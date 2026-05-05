@@ -67,8 +67,38 @@
           iconBtn.innerHTML = '<span aria-hidden="true">&plus;</span>';
         }
         removeBtn.classList.remove('acf-svg-icon-picker__remove--active');
+        setSlugLabel(parent, '');
         clearMissingState(parent);
       });
+    }
+  }
+
+  // Keep the saved-slug `<code>` element in sync with the field value. PHP
+  // renders the `<code>` only when a value is present and resolves, so both
+  // pick (creates/updates) and clear (removes) paths have to manage it
+  // client-side — otherwise the displayed slug lags behind the input value.
+  function setSlugLabel(parent, slug) {
+    if (!parent) {
+      return;
+    }
+    const existing = parent.querySelector('.acf-svg-icon-picker__slug');
+    if (!slug) {
+      existing?.remove();
+      return;
+    }
+    if (existing) {
+      existing.textContent = slug;
+      return;
+    }
+    const label = parent.ownerDocument.createElement('code');
+    label.className = 'acf-svg-icon-picker__slug';
+    label.textContent = slug;
+    // Insert directly after the trigger row to match the PHP-rendered order.
+    const selector = parent.querySelector('.acf-svg-icon-picker__selector');
+    if (selector?.parentNode) {
+      selector.parentNode.insertBefore(label, selector.nextSibling);
+    } else {
+      parent.appendChild(label);
     }
   }
 
@@ -307,22 +337,25 @@
     }
 
     // Per-field allowlist: when set AND groups are configured, restrict the
-    // visible groups (and the flat-svgs view) to icons in those groups. If
-    // groups aren't configured at all (flat-mode site), ignore the allowlist
-    // entirely and show every icon — better than failing closed when a
-    // field's saved allowed_groups no longer match the live config.
+    // visible groups (and the flat-svgs view) to icons in those groups.
+    //
+    // Fail open in two cases — better to show every icon than render a blank
+    // dialog with no recovery path:
+    //   1. Groups aren't configured at all (flat-mode site, allowlist saved
+    //      from a previous grouped config).
+    //   2. None of the allowlist keys match a live group (every key is stale
+    //      after a rename or removal).
     const groupsConfigured = Array.isArray(groups) && groups.length > 0;
-    const useAllowlist = groupsConfigured && activeAllowedGroups;
-    let visibleGroups = [];
-    if (groupsConfigured) {
-      visibleGroups = useAllowlist
-        ? groups.filter((g) => activeAllowedGroups.includes(g.key))
-        : groups;
-    }
+    let visibleGroups = groupsConfigured ? groups : [];
+    let allowedKeySet = null;
 
-    const allowedKeySet = useAllowlist
-      ? new Set(visibleGroups.flatMap((g) => g.icons || []))
-      : null;
+    if (groupsConfigured && activeAllowedGroups) {
+      const filtered = groups.filter((g) => activeAllowedGroups.includes(g.key));
+      if (filtered.length > 0) {
+        visibleGroups = filtered;
+        allowedKeySet = new Set(filtered.flatMap((g) => g.icons || []));
+      }
+    }
 
     const allowed = (key) => !allowedKeySet || allowedKeySet.has(key);
 
@@ -481,6 +514,7 @@
       if (removeBtn) {
         removeBtn.classList.add('acf-svg-icon-picker__remove--active');
       }
+      setSlugLabel(fieldWrapper, val);
       // If the field was rendered in the missing state, drop the red trim,
       // remove the "Icon not found" message and reset the trigger's aria-label
       // — leaving them in place after a successful pick reads as "the action

@@ -29,6 +29,7 @@ A major release focused on icon-set organisation, accessibility, and sane handli
   - `.acf-svg-icon-picker__popup ul li[data-svg]` → `.acf-svg-icon-picker__option`
 - **Browser baseline raised** by the native `<dialog>` move: Chrome 37+, Firefox 98+, Safari 15.4+. WP admin only — frontend unchanged.
 - **Composite save values** in grouped mode. Code that reads via `get_field()` + `get_svg_icon*()` keeps working (helpers accept both forms). Custom code that does its own slug → file lookup needs to handle the `groupkey.slug` form (`str_replace('.', '/', $slug) . '.svg'` is a reasonable default).
+- **Custom-location filter is now authoritative.** Previously, when `acf_svg_icon_picker_custom_location` resolved to no icons (wrong path, empty dir) the picker silently fell back to scanning the active theme dirs, hiding the broken config. The filter is now the source of truth when set — an empty result surfaces as "no icons" with the existing diagnostic message rather than substituting theme icons.
 
 ### Fixed
 
