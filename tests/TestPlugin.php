@@ -262,8 +262,10 @@ class TestPlugin extends \WP_UnitTestCase {
 
         add_filter('acf_svg_icon_picker_custom_location', fn() => 'custom-icons/');
 
-        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        // Register the expectation before the constructor runs — that's where
+        // _doing_it_wrong fires.
         $this->setExpectedIncorrectUsage('check_priority_dir');
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
     }
 
     /**
@@ -521,6 +523,28 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * A valid `group_by_subdir` filter pointing at a folder with no
+     * subdirectories should resolve to "no icons" without firing
+     * _doing_it_wrong — that's a legitimate empty state, not wrong usage.
+     */
+    public function test_group_by_subdir_no_subdirs_is_not_wrong_usage() {
+        switch_theme('test-theme');
+
+        // The icons/ folder has .svg files but no nested directories.
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+            'url' => content_url() . '/themes/test-theme/icons/',
+            'group_by_subdir' => true,
+        ]);
+
+        // No setExpectedIncorrectUsage — the test fails if _doing_it_wrong fires.
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $this->assertSame([], $plugin->svgs);
+        $this->assertSame([], $plugin->groups);
+    }
+
+    /**
      * A custom-location filter is authoritative when set: an empty result is
      * surfaced as "no icons" rather than silently falling back to scanning
      * theme dirs and substituting whatever lives there.
@@ -766,6 +790,67 @@ class TestPlugin extends \WP_UnitTestCase {
 
         $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('facebook');
         $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $path);
+    }
+
+    /**
+     * update_value's bare-slug → composite canonicalisation respects
+     * allowed_groups: a slug that exists only in a disallowed group stays
+     * bare rather than canonicalising to the disallowed composite form.
+     */
+    public function test_update_value_canonicalisation_respects_allowed_groups() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        // 'discord' lives in `brand` only. Without an allowlist, canonicalises.
+        $this->assertSame('brand.discord', $plugin->update_value('discord', 0, []));
+
+        // With allowlist=['social'], 'discord' has no allowed match → stays bare.
+        $field = ['allowed_groups' => ['social']];
+        $this->assertSame('discord', $plugin->update_value('discord', 0, $field));
+
+        // With allowlist=['brand'], 'discord' has one allowed match → canonicalises.
+        $field = ['allowed_groups' => ['brand']];
+        $this->assertSame('brand.discord', $plugin->update_value('discord', 0, $field));
+    }
+
+    /**
+     * A stale allowlist (none of its keys match a live group) is ignored —
+     * canonicalisation falls open the same way the picker UI does, so the
+     * field stays usable instead of getting stuck on legacy values.
+     */
+    public function test_update_value_ignores_fully_stale_allowed_groups() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        // Allowlist references groups that don't exist any more.
+        $field = ['allowed_groups' => ['legacy', 'old']];
+        $this->assertSame('brand.discord', $plugin->update_value('discord', 0, $field));
     }
 
     /**

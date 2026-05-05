@@ -102,17 +102,13 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             return null;
         }
 
-        // Group rendering is opt-in per the filter shape: a single { path, url }
-        // renders flat (BC); a list of locations renders with group headings,
-        // even if only one location ends up populated. A single location with
-        // 'group_by_subdir' => true also opts into group rendering, with one
-        // group per top-level subdirectory of `path`.
-        $is_grouped =
-            is_array($filter_result) && (array_is_list($filter_result) || !empty($filter_result['group_by_subdir']));
-
-        $resolved_groups = get_resolved_groups();
-
-        if ($resolved_groups === []) {
+        // Wrong-usage signal: filter returned a shape we can't interpret
+        // (string, non-list array missing path/url, etc.). A *valid* filter
+        // that resolves to no concrete folders (e.g. group_by_subdir on a
+        // path with no subdirs, or all-empty list entries) is a legitimate
+        // "no icons" state — caller surfaces that via the no-icons message,
+        // no notice fired.
+        if (normalize_custom_locations($filter_result) === []) {
             _doing_it_wrong(
                 __FUNCTION__,
                 esc_attr__(
@@ -123,6 +119,16 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             );
             return [];
         }
+
+        // Group rendering is opt-in per the filter shape: a single { path, url }
+        // renders flat (BC); a list of locations renders with group headings,
+        // even if only one location ends up populated. A single location with
+        // 'group_by_subdir' => true also opts into group rendering, with one
+        // group per top-level subdirectory of `path`.
+        $is_grouped =
+            is_array($filter_result) && (array_is_list($filter_result) || !empty($filter_result['group_by_subdir']));
+
+        $resolved_groups = get_resolved_groups();
 
         $svgs = [];
         /** @var list<array{key: string, name: string, icons: list<string>}> $groups */
@@ -182,6 +188,27 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             ? array_values(array_filter($field['allowed_groups'], is_string(...)))
             : [];
 
+        // Enforce allowed_groups on render: a saved value whose source group
+        // isn't in this field's allowlist renders as missing-asset, surfacing
+        // the inconsistency for the editor to re-pick. The picker UI restricts
+        // *new* picks; this catches values written outside the picker
+        // (imports, REST, copied post meta, legacy data).
+        //
+        // Mirror the picker's fail-open: if the allowlist is fully stale (no
+        // matches in live groups), skip enforcement entirely so the field
+        // still shows its data. Save-time canonicalisation in update_value()
+        // uses the same rule, so the two paths agree.
+        if (!$is_missing && is_array($icon) && $icon !== [] && $allowed_groups !== [] && $this->groups !== []) {
+            $live_keys = array_column($this->groups, 'key');
+            if (array_intersect($allowed_groups, $live_keys) !== []) {
+                $group_key = $this->resolve_group_key($saved_value, $icon);
+                if ($group_key !== null && !in_array($group_key, $allowed_groups, true)) {
+                    $is_missing = true;
+                    $icon = null;
+                }
+            }
+        }
+
         $this->render_view('acf-field', [
             'field' => $field,
             'saved_value' => $saved_value,
@@ -189,6 +216,32 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             'is_missing' => $is_missing,
             'allowed_groups' => $allowed_groups,
         ]);
+    }
+
+    /**
+     * Identify which configured group a saved value's resolved icon came from.
+     * Returns null when no group context is derivable (no groups configured,
+     * or a bare slug whose entry isn't tracked under any composite key).
+     *
+     * Composite values carry their group key as the prefix; bare values walk
+     * the group list looking for the matching `groupkey.bareslug` composite.
+     *
+     * @param array<string, mixed> $icon Icon data as returned by get_icon_data().
+     */
+    private function resolve_group_key(string $saved_value, array $icon): ?string {
+        if (str_contains($saved_value, '.')) {
+            return explode('.', $saved_value, 2)[0];
+        }
+        $bare = $icon['key'] ?? '';
+        if (!is_string($bare) || $bare === '') {
+            return null;
+        }
+        foreach ($this->groups as $group) {
+            if (in_array("{$group['key']}.{$bare}", $group['icons'], true)) {
+                return $group['key'];
+            }
+        }
+        return null;
     }
 
     /**
@@ -282,8 +335,21 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             return $value;
         }
 
+        // When the field declares an allowlist that's still active (at least
+        // one of its keys matches a live group), restrict canonicalisation
+        // candidates to allowed groups only. Stale allowlists fall through to
+        // the unrestricted scan — same fail-open semantic the picker UI uses.
+        $allowed = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
+            ? array_values(array_filter($field['allowed_groups'], is_string(...)))
+            : [];
+        $live_keys = array_column($this->groups, 'key');
+        $allowlist_active = $allowed !== [] && array_intersect($allowed, $live_keys) !== [];
+
         $matches = [];
         foreach ($this->groups as $group) {
+            if ($allowlist_active && !in_array($group['key'], $allowed, true)) {
+                continue;
+            }
             foreach ($group['icons'] as $composite) {
                 if (str_ends_with($composite, '.' . $value)) {
                     $matches[] = $composite;

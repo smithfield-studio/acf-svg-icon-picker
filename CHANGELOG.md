@@ -30,6 +30,7 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - **Browser baseline raised** by the native `<dialog>` move: Chrome 37+, Firefox 98+, Safari 15.4+. WP admin only — frontend unchanged.
 - **Composite save values** in grouped mode. Code that reads via `get_field()` + `get_svg_icon*()` keeps working (helpers accept both forms). Custom code that does its own slug → file lookup needs to handle the `groupkey.slug` form (`str_replace('.', '/', $slug) . '.svg'` is a reasonable default).
 - **Custom-location filter is now authoritative.** Previously, when `acf_svg_icon_picker_custom_location` resolved to no icons (wrong path, empty dir) the picker silently fell back to scanning the active theme dirs, hiding the broken config. The filter is now the source of truth when set — an empty result surfaces as "no icons" with the existing diagnostic message rather than substituting theme icons.
+- **`allowed_groups` is enforced server-side, not just in the picker UI.** A saved value whose source group isn't in the field's allowlist now renders as missing-asset (instead of silently showing an icon from a disallowed group), and `update_value`'s bare-slug → composite canonicalisation only matches within the allowlist. Stale allowlists (no live-group matches) fall open the same way the picker JS does, so misconfigured fields stay recoverable.
 
 ### Fixed
 
