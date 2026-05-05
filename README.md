@@ -7,6 +7,10 @@ Add a field type to ACF for selecting SVG icons from a popup modal. Theme develo
 
 ![SVG Icon Picker Popup](/screenshots/example-popup.jpg)
 
+![Grouped picker UI with multiple icon sets](/screenshots/grouped-picker.jpg)
+
+![Missing-asset state when a saved icon no longer resolves](/screenshots/missing-state.jpg)
+
 ## Features
 
 - **Theme-defined icon sets.** Icons live in your theme's `icons/` folder by default; configurable via filter.
@@ -55,6 +59,8 @@ $icon_svg  = get_svg_icon($slug);       // SVG markup as a string
 ```
 
 The field has a `return_format` setting: `'value'` (default) returns the slug for the helpers above; `'icon'` returns the SVG markup directly so `get_field()` is enough.
+
+> **Security note**: `get_svg_icon()` and `return_format = 'icon'` return the SVG file's contents verbatim — no sanitization. The plugin is built on the assumption that icons are committed to your theme/plugin and reviewed by you. **Do not point `acf_svg_icon_picker_custom_location` at a directory that accepts user uploads** (e.g. `wp-content/uploads/`) — a malicious editor could land XSS via an SVG `<script>` element. If you need that workflow, sanitize with [`enshrined/svg-sanitize`](https://github.com/darylldoyle/svg-sanitize) downstream of the helpers, or stay on `return_format = 'value'` and render `<img src>` against the URL only.
 
 ### With [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
@@ -134,6 +140,62 @@ $fields->addField('industry_icon', 'svg_icon_picker', [
 ```
 
 In the field-editor UI this appears as a checkbox group listing every available group; the setting is hidden when no groups are configured.
+
+## How values are stored
+
+The saved value is always a string. Its shape depends on which mode the picker is in at save time:
+
+| Picker mode | Stored value | Example |
+| --- | --- | --- |
+| Default theme `icons/` folder, or single `{path, url}` filter | Bare slug | `arrow-down` |
+| Multiple locations, or `group_by_subdir => true` | Composite `groupkey.slug` | `brand.discord` |
+
+Resolution rules:
+
+- The helper functions (`get_svg_icon_uri()`, `get_svg_icon_path()`, `get_svg_icon()`) accept both forms and resolve correctly.
+- Composite values are **strict**: if the `groupkey` prefix no longer matches any configured group, the field renders the missing-asset state in the editor instead of substituting a same-slug icon from another group. The rationale is that swapping in an unrelated icon silently changes editorial intent — better to surface the data drift than paper over it.
+- Bare values are **first-match-wins** across all configured locations (legacy back-compat for values saved before grouping was introduced).
+- In grouped mode, saving a previously-bare value through the picker may auto-canonicalise to the composite form when exactly one configured group claims the slug — see `update_value()`.
+
+If you read field values in custom code, prefer the helper functions; they paper over the difference.
+
+## WPGraphQL
+
+If [WPGraphQL](https://www.wpgraphql.com/) and [wp-graphql-acf](https://github.com/wp-graphql/wpgraphql-acf) are active, the field is automatically registered as an `SvgIcon` GraphQL object type:
+
+```graphql
+{
+  page(id: "...") {
+    myIcon {
+      slug   # e.g. "brand.discord"
+      url    # public URL of the resolved SVG
+      svg    # inline SVG markup
+    }
+  }
+}
+```
+
+`slug` is the bare slug in flat mode and `groupkey.slug` in grouped mode; `url` and `svg` are resolved using the same helpers as PHP-side code, so all three filter shapes (single, list, `group_by_subdir`) are honoured.
+
+## Filters
+
+| Filter | Signature | Default | Since |
+| --- | --- | --- | --- |
+| `acf_svg_icon_picker_folder` | `(string $folder): string` | `'icons/'` | 4.0.0 |
+| `acf_svg_icon_picker_custom_location` | `(false\|array): false\|array` — return `false` to fall through to theme dirs, an array `{path, url, name?, key?, group_by_subdir?}` for a single location, or a list of such arrays for grouped mode | `false` | 4.0.0 |
+
+```php
+// Change the theme-relative folder.
+add_filter('acf_svg_icon_picker_folder', fn() => 'resources/icons/');
+
+// Single custom location outside the theme.
+add_filter('acf_svg_icon_picker_custom_location', fn() => [
+    'path' => WP_CONTENT_DIR . '/icons/',
+    'url'  => content_url() . '/icons/',
+]);
+```
+
+See [Configuring icon locations](#configuring-icon-locations) above for grouped + subdir-mode shapes.
 
 ## Upgrading
 
