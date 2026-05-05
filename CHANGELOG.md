@@ -17,7 +17,8 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - **Composite save format in grouped mode** (`groupkey.slug`, e.g. `nucleo.arrow-down`). Records the editor's explicit pick so the same slug can live in multiple groups without colliding. Strict resolution — see the missing-asset note below.
 - **Missing-asset state in the editor.** When a saved value can't be resolved (file deleted, group renamed, etc.), the field renders a distinct red-tinted trigger with a `!` glyph and an inline status message ("Icon not found. Please replace or check original path: …"). Editors can spot stale data instead of mistaking it for a never-picked field. Frontend output unchanged.
 - **Native `<dialog>` popup** — focus trap, Esc-to-close, focus restoration, inert background page all handled by the browser. Icon tiles are real `<button>` elements with `aria-label`. Arrow-key navigation across the grid (Left/Right step a tile, Up/Down jump a row, Home/End to extremes), with column preservation when crossing groups.
-- **PHP 8.2 minimum**, declared via `composer.json` so install fails fast. PHP 8.1 reached EOL in Dec 2025.
+- **PHP 8.2 minimum**, declared via `composer.json` so install fails fast. PHP 8.1 reached EOL in Nov 2025.
+- **`'array'` return format** + new `get_svg_icon_data()` helper. Returns `{ slug, url, path, title, group_key, group_name }`, or `null` when the saved value no longer resolves. SVG markup is intentionally omitted to keep the format cheap on long lists — call `get_svg_icon($slug)` when markup is needed.
 
 ### Breaking
 

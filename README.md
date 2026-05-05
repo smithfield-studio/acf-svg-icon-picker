@@ -1,30 +1,24 @@
 [![Latest Stable Version](https://img.shields.io/packagist/v/smithfield-studio/acf-svg-icon-picker.svg?style=flat-square)](https://packagist.org/packages/smithfield-studio/acf-svg-icon-picker)
-[![PHP unit tests](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)](<[https://github.com//timber/timber/actions/workflows/php-unit-tests.yml?query=branch:2.x](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)>)
+[![PHP unit tests](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml/badge.svg?branch=main)](https://github.com/smithfield-studio/acf-svg-icon-picker/actions/workflows/php-unit-tests.yml)
 
 # ACF SVG Icon Picker Field
 
 Add a field type to ACF for selecting SVG icons from a popup modal. Theme developers provide the icon set; editors pick from it.
 
-![SVG Icon Picker Popup](/screenshots/example-popup.jpg)
-
 ![Grouped picker UI with multiple icon sets](/screenshots/grouped-picker.jpg)
-
-![Missing-asset state when a saved icon no longer resolves](/screenshots/missing-state.jpg)
 
 ## Features
 
 - **Theme-defined icon sets.** Icons live in your theme's `icons/` folder by default; configurable via filter.
 - **Multiple icon sets in one picker.** Group brand, UI, decorative icons (etc.) into named sections of the popup, or auto-group by subdirectory.
 - **Per-field group restriction.** A given field can opt to show only a subset of the configured groups (`allowed_groups`).
-- **Native `<dialog>` popup** with browser-supplied focus trap, Esc-to-close, focus restoration, and arrow-key grid navigation.
-- **Honest handling of stale data.** Saved values that no longer resolve render a distinct missing-asset state in the editor — never a silent substitute.
-- **Two return formats.** `'value'` returns the slug (default); `'icon'` returns the SVG markup directly.
+- **Three return formats.** `'value'` returns the slug (default); `'icon'` returns the SVG markup; `'array'` returns a struct with slug, URL, path, title, and group context.
 - **Parent/child theme aware.** Child-theme icons override same-slug parent-theme icons.
 
 ## Requirements
 
 - ACF 5 or 6 (free or Pro).
-- PHP 8.2+ — install fails fast on older versions via `composer.json`'s `require.php`.
+- PHP 8.2+
 
 ## Installation
 
@@ -34,7 +28,7 @@ Add a field type to ACF for selecting SVG icons from a popup modal. Theme develo
 composer require smithfield-studio/acf-svg-icon-picker
 ```
 
-Activate via the plugins admin page.
+Published on [Packagist](https://packagist.org/packages/smithfield-studio/acf-svg-icon-picker), so no extra repository declaration is needed. Activate via the plugins admin page.
 
 ### Manual
 
@@ -50,15 +44,21 @@ In your code, read field values via the helper functions — they handle both si
 use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri;
 use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path;
 use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon;
+use function SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data;
 
 $slug = get_field('my_icon_field');
 
 $icon_url  = get_svg_icon_uri($slug);   // public URL
 $icon_path = get_svg_icon_path($slug);  // filesystem path
 $icon_svg  = get_svg_icon($slug);       // SVG markup as a string
+$icon_data = get_svg_icon_data($slug);  // struct: slug, url, path, title, group_key, group_name
 ```
 
-The field has a `return_format` setting: `'value'` (default) returns the slug for the helpers above; `'icon'` returns the SVG markup directly so `get_field()` is enough.
+The field has a `return_format` setting:
+
+- `'value'` (default) — returns the slug. Pair with the helpers above.
+- `'icon'` — returns the SVG markup directly so `get_field()` is enough.
+- `'array'` — returns the same struct as `get_svg_icon_data()`, or `null` when the saved icon no longer resolves. Useful when a template wants the URL plus the title or group context in one call without reading the SVG from disk.
 
 > **Security note**: `get_svg_icon()` and `return_format = 'icon'` return the SVG file's contents verbatim — no sanitization. The plugin is built on the assumption that icons are committed to your theme/plugin and reviewed by you. **Do not point `acf_svg_icon_picker_custom_location` at a directory that accepts user uploads** (e.g. `wp-content/uploads/`) — a malicious editor could land XSS via an SVG `<script>` element. If you need that workflow, sanitize with [`enshrined/svg-sanitize`](https://github.com/darylldoyle/svg-sanitize) downstream of the helpers, or stay on `return_format = 'value'` and render `<img src>` against the URL only.
 
@@ -67,7 +67,7 @@ The field has a `return_format` setting: `'value'` (default) returns the slug fo
 ```php
 $fields->addField('my_icon', 'svg_icon_picker', [
     'label'         => 'My Icon',
-    'return_format' => 'value', // or 'icon'
+    'return_format' => 'value', // 'value' | 'icon' | 'array'
 ]);
 ```
 
@@ -153,11 +153,13 @@ The saved value is always a string. Its shape depends on which mode the picker i
 Resolution rules:
 
 - The helper functions (`get_svg_icon_uri()`, `get_svg_icon_path()`, `get_svg_icon()`) accept both forms and resolve correctly.
-- Composite values are **strict**: if the `groupkey` prefix no longer matches any configured group, the field renders the missing-asset state in the editor instead of substituting a same-slug icon from another group. The rationale is that swapping in an unrelated icon silently changes editorial intent — better to surface the data drift than paper over it.
+- Composite values are **strict**: if the `groupkey` prefix no longer matches any configured group, the field renders the missing-asset state in the editor instead of substituting a same-slug icon from another group.
 - Bare values are **first-match-wins** across all configured locations (legacy back-compat for values saved before grouping was introduced).
 - In grouped mode, saving a previously-bare value through the picker may auto-canonicalise to the composite form when exactly one configured group claims the slug — see `update_value()`.
 
-If you read field values in custom code, prefer the helper functions; they paper over the difference.
+If you read field values in custom code, prefer the helper functions; they accept either form.
+
+![Missing-asset state when a saved icon no longer resolves](/screenshots/missing-state.jpg)
 
 ## WPGraphQL
 

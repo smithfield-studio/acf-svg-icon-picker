@@ -4,7 +4,7 @@
 
 Two things to be aware of:
 
-- **PHP 8.2 minimum.** Composer install fails fast on PHP 8.1 (EOL since Dec 2025).
+- **PHP 8.2 minimum.** Composer install fails fast on PHP 8.1 (EOL Nov 2025).
 - **Deprecated filters removed** — `acf_icon_path`, `acf_icon_url`, `acf_icon_path_suffix` (deprecated since 4.0.0). If anything in your project still listens for them, switch to `acf_svg_icon_picker_folder`.
 
 If neither applies, upgrading is just a `composer update`.
