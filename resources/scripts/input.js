@@ -1,4 +1,11 @@
 (function () {
+  // Bail if the localized data is missing — without it there's nothing to render.
+  // The PHP side always emits this var via wp_add_inline_script(), so reaching
+  // this branch means script ordering broke or the field wasn't enqueued.
+  if (typeof acfSvgIconPicker === 'undefined') {
+    return;
+  }
+
   let activeItemEl;
   let activeAllowedGroups = null;
   let isOpen = false;
@@ -520,23 +527,29 @@
   }
 
   // MutationObserver as a fallback for fields rendered outside the ACF lifecycle
-  // (e.g. some block-editor flows). Skips text nodes and re-uses initializeField.
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType !== 1) {
-          return;
-        }
-        if (node.matches?.('.acf-svg-icon-picker')) {
-          initializeField(node);
-        }
-        node.querySelectorAll?.('.acf-svg-icon-picker').forEach(initializeField);
+  // (e.g. some block-editor flows). Skipped when ACF is loaded — its `ready
+  // append` action already calls initializeField for new fields, and watching
+  // every admin-page mutation on top of that is wasted work. Scoped to the
+  // admin wrapper rather than document.body for the same reason.
+  if (typeof acf === 'undefined' || typeof acf.add_action === 'undefined') {
+    const root = document.getElementById('wpwrap') || document.body;
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) {
+            return;
+          }
+          if (node.matches?.('.acf-svg-icon-picker')) {
+            initializeField(node);
+          }
+          node.querySelectorAll?.('.acf-svg-icon-picker').forEach(initializeField);
+        });
       });
     });
-  });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+    });
+  }
 })();
