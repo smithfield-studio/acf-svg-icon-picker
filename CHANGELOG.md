@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- **Save format in grouped mode is now `groupkey.slug`** (e.g. `nucleo.arrow-down`). Bare slugs (`arrow-down`) saved by older versions still resolve via a first-match scan, so existing data keeps working. Flat-mode (single `{ path, url }`) save format is unchanged.
+- **Save format in grouped mode is now `groupkey.slug`** (e.g. `nucleo.arrow-down`). The group prefix records which configured icon set the editor picked from. Resolution is strict — see the matching `Fixed` entry below. Flat-mode (single `{ path, url }`) save format is unchanged. **Legacy** bare slugs (`arrow-down`, saved before this version) still resolve via a first-match scan across all locations, so existing data keeps working.
 - **Picker popup is now a native `<dialog>`.** Browser supplies focus trap, Esc-to-close, focus restoration, and inert background page; removes the manual focus-trap and overlay JS.
 - **Vanilla JS picker.** jQuery dropped from the picker's own logic; only the ACF integration point still touches it (`acf.get_fields()` returns a jQuery collection).
 - **Icon tiles are real `<button>` elements** with `aria-label` — focusable, keyboard-activatable, screen-reader-friendly.
@@ -32,6 +32,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Pressing Enter anywhere in the admin opening the picker** ([#34](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/34)) — the trigger and remove buttons were missing `type="button"`, so they defaulted to `type="submit"` and intercepted Enter inside Flexible Content (and any other form context).
 - `get_svg_icon_uri()` returns the matching custom-location URL instead of always falling back to `get_theme_file_uri()` (which 404'd whenever icons lived outside the theme).
 - Numerous a11y gaps in the popup: missing dialog role, no focus trap, no Esc handler, no focus restoration, unlabelled search input and close button, list items not keyboard-focusable.
+- **Composite saves are now strict.** A saved value like `social.discord` whose group prefix no longer matches any configured group returns `''` from the helpers rather than scanning literal `"social.discord.svg"` (the previous broken behaviour). No silent fallback to a same-slug icon from a different group — substituting one icon for another silently changes the editor's original visual intent.
+- **Missing-asset visual state in the editor.** When a saved value can't be resolved, the field renders a distinct stack: red-tinted trigger circle with a `!` glyph (plus `aria-label`, `title`, and `data-missing-slug` for tooling/screen readers); the action button is labelled **Clear** instead of *Remove*; and an inline status message below the button shows "**Icon not found.** Please replace or check original path: `nucleo/fan.svg`". When a value resolves normally, the saved slug is shown in muted text below the trigger as quick context for the editor. The Clear/Remove button uses native WP `.button` styling rather than custom CSS so it matches the surrounding admin chrome (matches the convention in [acf-editor-palette](https://github.com/Log1x/acf-editor-palette)). Frontend output is unchanged — `get_svg_icon()` still returns `''` for missing icons; no placeholder markup leaks into production HTML.
+- **`group_by_subdir` resolution for non-slug folder names.** The helper now scans subdirs and matches via `sanitize_title($subdir)`, so `Brand Icons/` on disk resolves saved values like `brand-icons.foo` (previously the literal folder name had to match the saved prefix exactly).
+- **Group-key collisions auto-disambiguate.** Two locations whose keys slugify the same way now get suffixed `-2`, `-3`, … rather than the second location's icons silently merging into the first or being dropped on slug collision. Same fix applies to `group_by_subdir` mode.
+- **Empty-state debug message.** When the picker has no icons and a custom-location filter is configured, the message now points at the filter callback instead of always sending users to the default theme `/icons/` folder.
 
 ### Removed
 
@@ -45,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **DOM hooks for the picker UI changed.** If you target `.acf-svg-icon-picker__popup-overlay` or `.acf-svg-icon-picker__popup ul li[data-svg]` in custom CSS, switch to `.acf-svg-icon-picker__popup` and `.acf-svg-icon-picker__option`.
 - **Browser baseline implicitly raised** by the native `<dialog>` move: Chrome 37+, Firefox 98+, Safari 15.4+.
-- **Saved values may now be composite (`groupkey.slug`)** when the field is configured in grouped mode. Code that reads the field via `get_field()` and passes the result through `get_svg_icon*()` keeps working — the helpers parse both forms. Custom code that does its own slug → file lookup needs to handle the prefix.
+- **Saved values may now be composite (`groupkey.slug`)** when the field is configured in grouped mode. Code that reads the field via `get_field()` and passes the result through `get_svg_icon*()` keeps working — the helpers accept both forms (composite is strict and resolves within the matching group; bare slugs scan all locations). Custom code that does its own slug → file lookup needs to handle the prefix; `str_replace('.', '/', $slug) . '.svg'` is a reasonable default mapping.
 
 ## [4.3.1]
 

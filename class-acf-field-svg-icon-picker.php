@@ -117,12 +117,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $svgs = [];
         /** @var list<array{key: string, name: string, icons: list<string>}> $groups */
         $groups = [];
+        /** @var list<string> $used_group_keys */
+        $used_group_keys = [];
         $has_subdir_mode = false;
 
         foreach ($locations as $i => $location) {
             if (!empty($location['group_by_subdir'])) {
                 $has_subdir_mode = true;
-                $this->collect_subdir_groups($location, $svgs, $groups);
+                $this->collect_subdir_groups($location, $svgs, $groups, $used_group_keys);
                 continue;
             }
 
@@ -133,14 +135,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             }
 
             $group_name = $location['name'] ?? '';
-            // Always run the key through sanitize_title so user-supplied keys
-            // can't break HTML id/data attributes downstream. Falls back to
-            // the slugified name, then a deterministic index.
+            // Run the key through sanitize_title so user-supplied keys can't
+            // break HTML id/data attributes downstream. Then disambiguate
+            // collisions with `-2`, `-3`, … rather than letting two locations
+            // with the same slugified key silently merge into one group.
             $raw_key = $location['key'] ?? $group_name;
-            $group_key = sanitize_title($raw_key);
-            if ($group_key === '') {
-                $group_key = "group-{$i}";
-            }
+            $base_key = sanitize_title($raw_key) ?: "group-{$i}";
+            $group_key = $this->disambiguate_group_key($base_key, $used_group_keys);
+            $used_group_keys[] = $group_key;
 
             // Composite keys (`groupkey.slug`) only when we're actually
             // rendering groups — single `{path, url}` stays bare-keyed for
@@ -174,11 +176,17 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * per subdir that contains SVGs. Subdir name (Title-Cased) becomes the
      * group name; sanitised slug becomes the group key.
      *
-     * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location Location config.
-     * @param array<string, array<string, mixed>>                                                   $svgs     Reference: composite-keyed svgs dict (`subdirslug.iconslug`).
-     * @param list<array{key: string, name: string, icons: list<string>}>                           $groups   Reference: groups list to append into.
+     * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location        Location config.
+     * @param array<string, array<string, mixed>>                                                   $svgs            Reference: composite-keyed svgs dict (`subdirslug.iconslug`).
+     * @param list<array{key: string, name: string, icons: list<string>}>                           $groups          Reference: groups list to append into.
+     * @param list<string>                                                                          $used_group_keys Reference: tracked group keys for collision disambiguation.
      */
-    private function collect_subdir_groups(array $location, array &$svgs, array &$groups): void {
+    private function collect_subdir_groups(
+        array $location,
+        array &$svgs,
+        array &$groups,
+        array &$used_group_keys,
+    ): void {
         $base_path = rtrim($location['path'], '/\\');
         $base_url = trailingslashit($location['url']);
 
@@ -201,7 +209,14 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 continue;
             }
 
-            $group_key = sanitize_title($subdir);
+            // Disambiguate folder slugs that collide after sanitize_title
+            // (e.g. "Brand Icons" and "brand-icons" both → "brand-icons").
+            // Without this, the second folder would silently overwrite the
+            // first via the composite-key path.
+            $base_key = sanitize_title($subdir);
+            $group_key = $this->disambiguate_group_key($base_key, $used_group_keys);
+            $used_group_keys[] = $group_key;
+
             $composite_keys = [];
             foreach ($found as $bare_key => $entry) {
                 $composite = "{$group_key}.{$bare_key}";
@@ -215,6 +230,24 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 'icons' => $composite_keys,
             ];
         }
+    }
+
+    /**
+     * Append `-2`, `-3`, … to a group key until it doesn't collide with any
+     * already-used key. Empty input is treated as already disambiguated by
+     * the caller (which supplies a `group-{$i}` fallback).
+     *
+     * @param list<string> $used_group_keys
+     */
+    private function disambiguate_group_key(string $base_key, array $used_group_keys): string {
+        if (!in_array($base_key, $used_group_keys, true)) {
+            return $base_key;
+        }
+        $n = 2;
+        while (in_array("{$base_key}-{$n}", $used_group_keys, true)) {
+            $n++;
+        }
+        return "{$base_key}-{$n}";
     }
 
     /**
@@ -257,8 +290,18 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @param array<string, mixed> $field the field array
      */
     public function render_field($field): void {
-        $saved_value = $field['value'] !== '' ? $field['value'] : $field['initial_value'];
-        $icon = is_string($saved_value) && $saved_value !== '' ? $this->get_icon_data($saved_value) : null;
+        // Narrow the raw mixed-typed field value to a string up front so the
+        // view's docblock can honestly declare `string` and skip defensive
+        // is_string() checks on render-side data.
+        $raw = $field['value'] !== '' ? $field['value'] : $field['initial_value'];
+        $saved_value = is_string($raw) ? $raw : '';
+        $icon = $saved_value !== '' ? $this->get_icon_data($saved_value) : null;
+
+        // A non-empty saved value that doesn't resolve to icon data means the
+        // asset is gone (file deleted, group renamed, etc.). The view renders
+        // a distinct warning state so editors can spot stale data — fields
+        // that look identical to "no icon picked yet" are silent footguns.
+        $is_missing = $saved_value !== '' && empty($icon);
 
         $allowed_groups = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
             ? array_values(array_filter($field['allowed_groups'], is_string(...)))
@@ -268,6 +311,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             'field' => $field,
             'saved_value' => $saved_value,
             'icon' => $icon,
+            'is_missing' => $is_missing,
             'allowed_groups' => $allowed_groups,
         ]);
     }
@@ -346,17 +390,29 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // printed by render_dialog_template(). Only the dynamic data — the
         // icon dictionary, group list, and the empty-state message (rendered
         // client-side when svgs is empty) — needs to ride in the script var.
-        $data = [
-            'svgs' => $this->svgs,
-            'groups' => $this->groups,
-            // translators: %s: path_suffix
-            'noIconsMsg' => sprintf(
+        // Empty-state debug hint depends on which path resolved (or didn't):
+        // a custom-location filter pointing nowhere should send the user to
+        // their filter callback, not at the default theme `icons/` folder.
+        $has_custom_location = apply_filters('acf_svg_icon_picker_custom_location', false) !== false;
+
+        $no_icons_msg = $has_custom_location
+            ? __(
+                'No icons found. Check the paths returned by your <code>acf_svg_icon_picker_custom_location</code> filter.',
+                'acf-svg-icon-picker',
+            )
+            : sprintf(
+                // translators: %s: theme folder path (default 'icons/')
                 __(
-                    'To add icons, add your svg files in the <code>/%s</code> folder in your theme.',
+                    'To add icons, add your SVG files in the <code>/%s</code> folder in your theme.',
                     'acf-svg-icon-picker',
                 ),
                 esc_attr($this->path_suffix),
-            ),
+            );
+
+        $data = [
+            'svgs' => $this->svgs,
+            'groups' => $this->groups,
+            'noIconsMsg' => $no_icons_msg,
         ];
 
         wp_add_inline_script(

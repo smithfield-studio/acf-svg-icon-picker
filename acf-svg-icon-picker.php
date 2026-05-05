@@ -140,10 +140,11 @@ function get_svg_icon_path(string $icon_name): string {
  * Resolve a saved value (composite `groupkey.slug` or bare slug) to a
  * { path, url } pair across a list of locations.
  *
- * Composite is tried first against the matching group only; bare slugs (and
- * composites that don't resolve) fall back to a first-match scan across all
- * locations — preserving back-compat with values saved before composite keys
- * existed.
+ * Composite saves are strict: the group prefix must match a configured group
+ * (or a subdir whose `sanitize_title()` matches), otherwise we 404 rather
+ * than substitute a same-slug icon from a different group. Bare slugs are
+ * legacy data (pre-composite, or a flat-mode sibling field) and still scan
+ * all locations first-match-wins.
  *
  * @internal
  * @param list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}> $locations
@@ -151,6 +152,12 @@ function get_svg_icon_path(string $icon_name): string {
  */
 function resolve_in_locations(array $locations, string $icon_name): ?array {
     if (str_contains($icon_name, '.')) {
+        // Composite save: strict. The group prefix records the editor's
+        // explicit pick; if the group no longer matches any configured
+        // location we 404 rather than silently substitute a same-slug icon
+        // from a different group (which would change the visual intent).
+        // Migrate stale data with a one-shot rebind in your theme/plugin
+        // rather than relying on fallback resolution.
         [$group_key, $slug] = explode('.', $icon_name, 2);
         foreach ($locations as $location) {
             $resolved = resolve_icon_in_location($location, $slug, $group_key);
@@ -158,8 +165,11 @@ function resolve_in_locations(array $locations, string $icon_name): ?array {
                 return $resolved;
             }
         }
+        return null;
     }
 
+    // Bare slug: legacy data (pre-composite saves, or a sibling field in
+    // flat-mode). First-match-wins scan across all locations.
     foreach ($locations as $location) {
         $resolved = resolve_icon_in_location($location, $icon_name);
         if ($resolved !== null) {
@@ -192,43 +202,50 @@ function resolve_icon_in_location(array $location, string $icon_name, ?string $g
         return null;
     }
 
-    if ($group_key_filter !== null) {
-        if (!empty($location['group_by_subdir'])) {
-            $candidate = "{$base_path}/{$group_key_filter}/{$icon_name}.svg";
-            if (file_exists($candidate)) {
-                return [
-                    'path' => $candidate,
-                    'url' => "{$base_url}{$group_key_filter}/{$icon_name}.svg",
-                ];
-            }
-            return null;
-        }
-
+    if ($group_key_filter !== null && empty($location['group_by_subdir'])) {
+        // Top-level location: must declare a matching key (or slugified name).
         $raw_key = $location['key'] ?? $location['name'] ?? '';
         if (sanitize_title($raw_key) !== $group_key_filter) {
             return null;
         }
     }
 
-    $flat_path = "{$base_path}/{$icon_name}.svg";
-    if (file_exists($flat_path)) {
-        return [
-            'path' => $flat_path,
-            'url' => "{$base_url}{$icon_name}.svg",
-        ];
+    if (empty($location['group_by_subdir'])) {
+        $flat_path = "{$base_path}/{$icon_name}.svg";
+        if (file_exists($flat_path)) {
+            return [
+                'path' => $flat_path,
+                'url' => "{$base_url}{$icon_name}.svg",
+            ];
+        }
+        return null;
     }
 
-    if ($group_key_filter !== null || empty($location['group_by_subdir']) || !is_dir($base_path)) {
+    if (!is_dir($base_path)) {
         return null;
     }
 
     $entries = scandir($base_path);
-    $subdirs = $entries === false
-        ? []
-        : array_filter($entries, fn($entry) => $entry !== '.' && $entry !== '..' && is_dir("{$base_path}/{$entry}"));
+    if ($entries === false) {
+        return null;
+    }
 
-    foreach ($subdirs as $subdir) {
-        $candidate = "{$base_path}/{$subdir}/{$icon_name}.svg";
+    // Subdir mode: scan each subdir, comparing on sanitize_title($subdir) so
+    // a saved key like 'brand-icons' resolves the literal `Brand Icons/`
+    // folder. Without filter, scan all subdirs (legacy bare-slug fallback).
+    foreach ($entries as $subdir) {
+        if ($subdir === '.' || $subdir === '..') {
+            continue;
+        }
+        $full = "{$base_path}/{$subdir}";
+        if (!is_dir($full)) {
+            continue;
+        }
+        if ($group_key_filter !== null && sanitize_title($subdir) !== $group_key_filter) {
+            continue;
+        }
+
+        $candidate = "{$full}/{$icon_name}.svg";
         if (file_exists($candidate)) {
             return [
                 'path' => $candidate,

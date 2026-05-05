@@ -11,6 +11,7 @@ This ACF field type is compatible with:
 
 - [x] ACF 6
 - [x] ACF 5
+- PHP 8.2+ (8.1 reached EOL Dec 2025; the install fails fast on older versions via `composer.json`'s `require.php`).
 
 ## Preview
 
@@ -118,7 +119,10 @@ Behaviour:
 - A single `{ path, url }` array still works (back-compatible) and renders flat without a group heading.
 - A list of locations renders with group headings — even if only one location ends up populated.
 - Empty locations (no SVGs found) are silently skipped.
-- In grouped mode, saved values are stored as `groupkey.slug` (e.g. `brand.discord`), so the same slug can appear in multiple groups without colliding. Bare slugs saved by older versions still resolve via a first-match scan, so existing data keeps working. The `get_svg_icon*()` helpers accept both forms.
+- **Composite save format.** In grouped mode, saved values are stored as `groupkey.slug` (e.g. `brand.discord`), so the same slug can live in multiple groups without colliding. The `get_svg_icon*()` helpers parse the prefix and resolve within the matching group only.
+- **Composite saves are strict.** A saved value whose group prefix no longer matches any configured group (e.g. you renamed `social` → `brand` in the filter) returns `''` from the helpers rather than silently substituting a same-slug icon from a different group. The editor's trigger renders a missing-asset state (red `!` + path-style error) so stale data is visible at a glance — pick a replacement or clear the field.
+- **Legacy bare slugs** (`arrow-down`, no prefix) saved by pre-grouping versions still resolve via a first-match scan across all locations.
+- **Group keys auto-disambiguate.** Two locations whose names slugify the same way (`Brand Icons` and `brand-icons` → both `brand-icons`) get suffixed `-2`, `-3`, … so the second location's icons don't silently merge or get dropped.
 
 #### Auto-grouping by subdirectory
 
@@ -138,7 +142,7 @@ add_filter('acf_svg_icon_picker_custom_location', function () {
 });
 ```
 
-`get_svg_icon_path()` and `get_svg_icon_uri()` understand subdir mode too — they look for the icon in the location's flat path first, then fall back to scanning each subfolder.
+`get_svg_icon_path()` and `get_svg_icon_uri()` understand subdir mode — composite saves like `brand.discord` are resolved by scanning each subdir of the configured `path` and matching against `sanitize_title($subdir)`, so a saved `brand-icons.foo` resolves the literal `Brand Icons/` folder. Bare-slug saves (legacy data, no prefix) scan all subdirs first-match-wins.
 
 ### [ACF Builder](https://github.com/StoutLogic/acf-builder) / [ACF Composer](https://github.com/Log1x/acf-composer)
 
@@ -178,7 +182,7 @@ Then:
 
 ```bash
 composer test            # PHPUnit
-composer phpstan         # static analysis (level 9)
+composer phpstan         # static analysis (level 10)
 composer format          # mago — format PHP
 composer format:check    # mago — format check (used by CI)
 ```

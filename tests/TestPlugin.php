@@ -440,6 +440,71 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * Composite saves are strict: a value with a group prefix that no longer
+     * matches any live group returns '' rather than silently substituting a
+     * same-slug icon from a different group. Bare-slug saves (legacy data)
+     * still resolve via the first-match scan — that's a separate path.
+     */
+    public function test_get_svg_icon_path_composite_404s_when_group_renamed() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand', // saved value used 'social' before, group was renamed
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+        ]);
+
+        // Strict: composite prefix `social` doesn't match the live `brand`
+        // group, so the helper returns '' even though `discord.svg` exists in
+        // brand. Editors get a missing-asset signal (rendered visually) and
+        // can re-pick rather than getting a silently-wrong icon.
+        $stale_composite = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('social.discord');
+        $this->assertSame('', $stale_composite);
+
+        // Bare slug still resolves — that's the legacy back-compat path,
+        // never had a group context to violate.
+        $bare = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('discord');
+        $this->assertStringEndsWith('/test-theme/icons/discord.svg', $bare);
+    }
+
+    /**
+     * Two locations with explicit `key => 'social'` get the second one
+     * suffixed with `-2` rather than silently merging into the first group's
+     * composite namespace (which would drop colliding slugs).
+     */
+    public function test_multi_location_collision_disambiguates_group_key() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Social Brand',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social UI',
+                'key' => 'social', // collides on purpose
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $this->assertCount(2, $plugin->groups);
+        $this->assertSame('social', $plugin->groups[0]['key']);
+        $this->assertSame('social-2', $plugin->groups[1]['key']);
+        $this->assertContains('social.discord', $plugin->groups[0]['icons']);
+        $this->assertContains('social-2.facebook', $plugin->groups[1]['icons']);
+        $this->assertArrayHasKey('social.discord', $plugin->svgs);
+        $this->assertArrayHasKey('social-2.facebook', $plugin->svgs);
+    }
+
+    /**
      * Single-location filter result leaves $groups empty so the picker UI
      * renders flat (back-compat with the original single-dir behaviour).
      */
