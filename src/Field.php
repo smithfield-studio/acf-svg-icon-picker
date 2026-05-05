@@ -8,14 +8,18 @@
 
 namespace SmithfieldStudio\AcfSvgIconPicker;
 
-if (!defined('ABSPATH')) {
-    exit();
-}
+use SmithfieldStudio\AcfSvgIconPicker\Concerns\BuildsGroups;
+use SmithfieldStudio\AcfSvgIconPicker\Concerns\ScansIcons;
+
+defined('ABSPATH') || exit();
 
 /**
  * Field class for the SVG Icon Picker field.
  */
 class ACF_Field_Svg_Icon_Picker extends \acf_field {
+    use BuildsGroups;
+    use ScansIcons;
+
     /**
      * Plugin version. Used for asset cache-busting on registered scripts/styles.
      */
@@ -100,7 +104,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // 'group_by_subdir' => true also opts into group rendering, with one
         // group per top-level subdirectory of `path`.
         $is_list_grouped = is_array($filter_result) && array_is_list($filter_result);
-        $locations = $this->normalize_locations($filter_result);
+        $locations = normalize_custom_locations($filter_result);
 
         if ($locations === []) {
             _doing_it_wrong(
@@ -166,119 +170,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 
         if ($is_list_grouped || $has_subdir_mode) {
             $this->groups = $groups;
-        }
-
-        return $svgs;
-    }
-
-    /**
-     * Walk the immediate subdirectories of a location's path and add one group
-     * per subdir that contains SVGs. Subdir name (Title-Cased) becomes the
-     * group name; sanitised slug becomes the group key.
-     *
-     * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location        Location config.
-     * @param array<string, array<string, mixed>>                                                   $svgs            Reference: composite-keyed svgs dict (`subdirslug.iconslug`).
-     * @param list<array{key: string, name: string, icons: list<string>}>                           $groups          Reference: groups list to append into.
-     * @param list<string>                                                                          $used_group_keys Reference: tracked group keys for collision disambiguation.
-     */
-    private function collect_subdir_groups(
-        array $location,
-        array &$svgs,
-        array &$groups,
-        array &$used_group_keys,
-    ): void {
-        $base_path = rtrim($location['path'], '/\\');
-        $base_url = trailingslashit($location['url']);
-
-        if (!is_dir($base_path)) {
-            return;
-        }
-
-        $scan = scandir($base_path);
-        $entries = $scan === false
-            ? []
-            : array_filter(
-                $scan,
-                static fn($entry) => $entry !== '.' && $entry !== '..' && is_dir("{$base_path}/{$entry}"),
-            );
-
-        foreach ($entries as $subdir) {
-            $found = $this->svg_collector("{$base_path}/{$subdir}", "{$base_url}{$subdir}/");
-
-            if ($found === []) {
-                continue;
-            }
-
-            // Disambiguate folder slugs that collide after sanitize_title
-            // (e.g. "Brand Icons" and "brand-icons" both → "brand-icons").
-            // Without this, the second folder would silently overwrite the
-            // first via the composite-key path.
-            $base_key = sanitize_title($subdir);
-            $group_key = $this->disambiguate_group_key($base_key, $used_group_keys);
-            $used_group_keys[] = $group_key;
-
-            $composite_keys = [];
-            foreach ($found as $bare_key => $entry) {
-                $composite = "{$group_key}.{$bare_key}";
-                $svgs[$composite] = $entry;
-                $composite_keys[] = $composite;
-            }
-
-            $groups[] = [
-                'key' => $group_key,
-                'name' => ucwords(str_replace(['-', '_'], ' ', $subdir)),
-                'icons' => $composite_keys,
-            ];
-        }
-    }
-
-    /**
-     * Append `-2`, `-3`, … to a group key until it doesn't collide with any
-     * already-used key. Empty input is treated as already disambiguated by
-     * the caller (which supplies a `group-{$i}` fallback).
-     *
-     * @param list<string> $used_group_keys
-     */
-    private function disambiguate_group_key(string $base_key, array $used_group_keys): string {
-        if (!in_array($base_key, $used_group_keys, true)) {
-            return $base_key;
-        }
-        $n = 2;
-        while (in_array("{$base_key}-{$n}", $used_group_keys, true)) {
-            $n++;
-        }
-        return "{$base_key}-{$n}";
-    }
-
-    /**
-     * Thin wrapper over the shared {@see normalize_custom_locations()} helper
-     * so the field class and the public API helpers (`get_svg_icon_path()`,
-     * `get_svg_icon_uri()`) share one definition of the filter contract.
-     *
-     * @param  mixed $filter_result Raw value returned by the filter.
-     * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
-     */
-    private function normalize_locations(mixed $filter_result): array {
-        return normalize_custom_locations($filter_result);
-    }
-
-    /**
-     * Method that checks the theme directories for icons.
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    private function check_theme_dirs(): array {
-        $parent_theme_path = get_template_directory() . '/' . $this->path_suffix;
-        $child_theme_path = get_stylesheet_directory() . '/' . $this->path_suffix;
-        $parent_theme_url = get_template_directory_uri() . '/' . $this->path_suffix;
-        $child_theme_url = get_stylesheet_directory_uri() . '/' . $this->path_suffix;
-
-        $svgs = $this->svg_collector($parent_theme_path, $parent_theme_url);
-
-        if ($parent_theme_path !== $child_theme_path) {
-            // array_merge dedupes by slug because $svgs is slug-keyed and the
-            // child entries (run second) overwrite parent entries on collision.
-            return array_merge($svgs, $this->svg_collector($child_theme_path, $child_theme_url));
         }
 
         return $svgs;
@@ -373,10 +264,49 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     }
 
     /**
+     * Canonicalise legacy bare-slug saves to their composite form when the
+     * site is now in grouped mode and exactly one configured group claims
+     * the slug. Lets old data drain to the new format gradually as fields
+     * are re-saved, without a one-shot migration.
+     *
+     * No-ops when:
+     *   - the value isn't a string or is empty,
+     *   - the value is already composite (contains a '.'),
+     *   - no groups are configured (flat mode),
+     *   - or the slug is ambiguous across multiple groups (we'd need an
+     *     editor decision and silently picking one is the wrong default).
+     *
+     * @param  mixed                $value   The value sent for this field.
+     * @param  mixed                $post_id The post id.
+     * @param  array<string, mixed> $field   The field array.
+     */
+    public function update_value(mixed $value, mixed $post_id, $field): mixed {
+        if (!is_string($value) || $value === '' || str_contains($value, '.')) {
+            return $value;
+        }
+
+        if ($this->groups === []) {
+            return $value;
+        }
+
+        $matches = [];
+        foreach ($this->groups as $group) {
+            foreach ($group['icons'] as $composite) {
+                if (str_ends_with($composite, '.' . $value)) {
+                    $matches[] = $composite;
+                    break;
+                }
+            }
+        }
+
+        return count($matches) === 1 ? $matches[0] : $value;
+    }
+
+    /**
      * Enqueue assets for the field.
      */
     public function input_admin_enqueue_scripts(): void {
-        $url = plugin_dir_url(__FILE__);
+        $url = plugin_dir_url(PLUGIN_FILE);
         wp_register_script(
             'acf-input-svg-icon-picker',
             "{$url}resources/scripts/input.js",
@@ -464,7 +394,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 			<button
 				type="button"
 				class="acf-svg-icon-picker__popup-close"
-				aria-label="<?php esc_attr_e('close', 'acf-svg-icon-picker'); ?>"
+				aria-label="<?php esc_attr_e('Close', 'acf-svg-icon-picker'); ?>"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
 			</button>
@@ -473,51 +403,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 	</dialog>
 </template>
 		<?php
-    }
-
-    /**
-     * Collects the icons from the specified path.
-     *
-     * @param  string $path The path to the icons to scan for SVG files.
-     * @param  string $url The url to the icons.
-     * @return array<string, array<string, mixed>>
-     */
-    private function svg_collector(string $path, string $url): array {
-        $svg_files = [];
-        if (!is_dir($path)) {
-            return [];
-        }
-
-        $entries = scandir($path);
-        if ($entries === false) {
-            return [];
-        }
-
-        $found_files = array_filter(
-            $entries,
-            static fn($file) => pathinfo((string) $file, PATHINFO_EXTENSION) === 'svg',
-        );
-
-        if ($found_files === []) {
-            return [];
-        }
-
-        foreach ($found_files as $key => $file) {
-            $name = explode('.', $file)[0];
-            $legacy_key = str_replace(['-', '_'], ' ', $name);
-            $title = ucwords($legacy_key);
-            $key = sanitize_key($name);
-
-            $svg_files[$key] = [
-                'key' => $key,
-                'legacy_key' => $legacy_key,
-                'title' => $title,
-                'url' => esc_url("{$url}{$file}"),
-                'path' => "{$path}/{$file}",
-            ];
-        }
-
-        return $svg_files;
     }
 
     /**
@@ -560,7 +445,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @param array<string, mixed> $data The data to pass to the view.
      */
     private function render_view(string $view, array $data): void {
-        $path = plugin_dir_path(__FILE__) . "resources/views/{$view}.php";
+        $path = plugin_dir_path(PLUGIN_FILE) . "resources/views/{$view}.php";
 
         if (!file_exists($path)) {
             return;

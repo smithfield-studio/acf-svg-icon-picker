@@ -22,6 +22,23 @@ namespace SmithfieldStudio\AcfSvgIconPicker;
 defined('ABSPATH') || exit();
 
 /**
+ * Captured at parse time so the field class can resolve plugin-relative URLs
+ * and paths (assets, view templates) without each call site doing its own
+ * `dirname(__DIR__)` dance from inside src/.
+ */
+const PLUGIN_FILE = __FILE__;
+
+// Manual requires (no Composer autoloader at runtime). The plugin lives in
+// wp-content/plugins/ on both zip-drop and Composer installs, where the host
+// project's autoloader can't reach it — so the bootstrap always loads its own
+// files. The composer.json `autoload` section is kept as IDE/PHPStan metadata
+// only.
+require_once __DIR__ . '/src/helpers.php';
+require_once __DIR__ . '/src/Concerns/ScansIcons.php';
+require_once __DIR__ . '/src/Concerns/BuildsGroups.php';
+require_once __DIR__ . '/src/Field.php';
+
+/**
  * Include SVG Icon Picker field type.
  */
 function include_field_types(): void {
@@ -29,243 +46,71 @@ function include_field_types(): void {
         return;
     }
 
-    require_once __DIR__ . '/class-acf-field-svg-icon-picker.php';
-    acf_register_field_type(\SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class);
+    acf_register_field_type(ACF_Field_Svg_Icon_Picker::class);
 }
 
 add_action('acf/include_field_types', __NAMESPACE__ . '\\include_field_types');
 
 /**
- * Normalize the acf_svg_icon_picker_custom_location filter result into a
- * list of locations. Accepts either a single { path, url } array or a list
- * of them. Returns an empty list when the filter is unset or invalid.
+ * Register the field with WPGraphQL when the wp-graphql-acf bridge is active.
  *
- * @internal
- * @param  mixed $filter_result Raw value returned by the filter.
- * @return list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}>
+ * Exposes the saved slug as a `SvgIcon` object with the resolved URL and inline
+ * SVG markup so headless consumers can render directly without a second round
+ * trip. Resolution mirrors the PHP helpers — a missing icon resolves to empty
+ * `url`/`svg` strings, never an exception.
+ *
+ * Registers unconditionally; both hooks only fire if WPGraphQL is active, and
+ * the inner function_exists() guards keep us safe if the wp-graphql-acf bridge
+ * is missing while WPGraphQL itself is present.
  */
-function normalize_custom_locations(mixed $filter_result): array {
-    if (!is_array($filter_result) || $filter_result === []) {
-        return [];
+add_action('graphql_register_types', static function (): void {
+    if (!function_exists('register_graphql_object_type')) {
+        return;
     }
 
-    if (
-        isset($filter_result['path'], $filter_result['url'])
-        && is_string($filter_result['path'])
-        && is_string($filter_result['url'])
-    ) {
-        /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $single */
-        $single = $filter_result;
-        return [$single];
+    register_graphql_object_type('SvgIcon', [
+        'description' => __('An SVG icon picked from the configured icon set.', 'acf-svg-icon-picker'),
+        'fields' => [
+            'slug' => [
+                'type' => 'String',
+                'description' => __(
+                    'The saved slug. Bare slug in flat mode, "groupkey.slug" in grouped mode.',
+                    'acf-svg-icon-picker',
+                ),
+            ],
+            'url' => [
+                'type' => 'String',
+                'description' => __('Public URL of the resolved SVG file.', 'acf-svg-icon-picker'),
+            ],
+            'svg' => [
+                'type' => 'String',
+                'description' => __('Inline SVG markup for the resolved icon.', 'acf-svg-icon-picker'),
+            ],
+        ],
+    ]);
+});
+
+add_action('wpgraphql/acf/registry_init', static function (): void {
+    if (!function_exists('register_graphql_acf_field_type')) {
+        return;
     }
 
-    if (array_is_list($filter_result)) {
-        $valid = [];
-        foreach ($filter_result as $location) {
-            if (
-                !is_array($location)
-                || !isset($location['path'], $location['url'])
-                || !is_string($location['path'])
-                || !is_string($location['url'])
-            ) {
-                continue;
+    register_graphql_acf_field_type('svg_icon_picker', [
+        'graphql_type' => 'SvgIcon',
+        'resolve' => static function ($root, $args, $context, $info, $field_config) {
+            $slug = is_object($field_config) && method_exists($field_config, 'resolve_field')
+                ? $field_config->resolve_field($root, $args, $context, $info)
+                : null;
+
+            if (!is_string($slug) || $slug === '') {
+                return null;
             }
 
-            /** @var array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location */
-            $valid[] = $location;
-        }
-        return $valid;
-    }
-
-    return [];
-}
-
-/**
- * Get the URI of an SVG icon.
- *
- * @api
- * @since 4.0.0
- * @param string $icon_name The name of the icon we want to get the URI for.
- * @return string The URI of the icon, empty string if the icon does not exist.
- */
-function get_svg_icon_uri(string $icon_name): string {
-    $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
-
-    if ($locations !== []) {
-        $resolved = resolve_in_locations($locations, $icon_name);
-        return $resolved === null ? '' : $resolved['url'];
-    }
-
-    if (get_svg_icon_path($icon_name) === '') {
-        return '';
-    }
-
-    $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
-    if (!is_string($folder)) {
-        $folder = 'icons/';
-    }
-
-    return get_theme_file_uri("{$folder}{$icon_name}.svg");
-}
-
-/**
- * Get the path of an SVG icon.
- *
- * @api
- * @param string $icon_name The name of the icon we want to get the path for.
- * @return string The path of the icon, empty string if the icon does not exist.
- */
-function get_svg_icon_path(string $icon_name): string {
-    $locations = normalize_custom_locations(apply_filters('acf_svg_icon_picker_custom_location', false));
-
-    if ($locations !== []) {
-        $resolved = resolve_in_locations($locations, $icon_name);
-        return $resolved === null ? '' : $resolved['path'];
-    }
-
-    $folder = apply_filters('acf_svg_icon_picker_folder', 'icons/');
-    if (!is_string($folder)) {
-        $folder = 'icons/';
-    }
-    $file_path = get_theme_file_path("{$folder}{$icon_name}.svg");
-
-    if (!file_exists($file_path)) {
-        return '';
-    }
-
-    return $file_path;
-}
-
-/**
- * Resolve a saved value (composite `groupkey.slug` or bare slug) to a
- * { path, url } pair across a list of locations.
- *
- * Composite saves are strict: the group prefix must match a configured group
- * (or a subdir whose `sanitize_title()` matches), otherwise we 404 rather
- * than substitute a same-slug icon from a different group. Bare slugs are
- * legacy data (pre-composite, or a flat-mode sibling field) and still scan
- * all locations first-match-wins.
- *
- * @internal
- * @param list<array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool}> $locations
- * @return array{path: string, url: string}|null
- */
-function resolve_in_locations(array $locations, string $icon_name): ?array {
-    if (str_contains($icon_name, '.')) {
-        // Composite save: strict. The group prefix records the editor's
-        // explicit pick; if the group no longer matches any configured
-        // location we 404 rather than silently substitute a same-slug icon
-        // from a different group (which would change the visual intent).
-        // Migrate stale data with a one-shot rebind in your theme/plugin
-        // rather than relying on fallback resolution.
-        [$group_key, $slug] = explode('.', $icon_name, 2);
-        foreach ($locations as $location) {
-            $resolved = resolve_icon_in_location($location, $slug, $group_key);
-            if ($resolved !== null) {
-                return $resolved;
-            }
-        }
-        return null;
-    }
-
-    // Bare slug: legacy data (pre-composite saves, or a sibling field in
-    // flat-mode). First-match-wins scan across all locations.
-    foreach ($locations as $location) {
-        $resolved = resolve_icon_in_location($location, $icon_name);
-        if ($resolved !== null) {
-            return $resolved;
-        }
-    }
-
-    return null;
-}
-
-/**
- * Resolve an icon name to a { path, url } pair within a single location,
- * honouring `group_by_subdir`. Returns null when the icon is not found.
- *
- * When `$group_key_filter` is non-null the lookup is constrained to that
- * group: a top-level location must declare a matching `key` (or slugified
- * `name`); a subdir-mode location only checks the matching subfolder.
- *
- * @internal
- * @param array{path: string, url: string, name?: string, key?: string, group_by_subdir?: bool} $location          Location config.
- * @param string                                                                                 $icon_name        Icon slug (without group prefix).
- * @param string|null                                                                            $group_key_filter Optional group key to constrain the search to.
- * @return array{path: string, url: string}|null
- */
-function resolve_icon_in_location(array $location, string $icon_name, ?string $group_key_filter = null): ?array {
-    $base_path = rtrim($location['path'], '/\\');
-    $base_url = trailingslashit($location['url']);
-
-    if ($base_path === '') {
-        return null;
-    }
-
-    if ($group_key_filter !== null && empty($location['group_by_subdir'])) {
-        // Top-level location: must declare a matching key (or slugified name).
-        $raw_key = $location['key'] ?? $location['name'] ?? '';
-        if (sanitize_title($raw_key) !== $group_key_filter) {
-            return null;
-        }
-    }
-
-    if (empty($location['group_by_subdir'])) {
-        $flat_path = "{$base_path}/{$icon_name}.svg";
-        if (file_exists($flat_path)) {
             return [
-                'path' => $flat_path,
-                'url' => "{$base_url}{$icon_name}.svg",
+                'slug' => $slug,
+                'url' => get_svg_icon_uri($slug),
+                'svg' => get_svg_icon($slug),
             ];
-        }
-        return null;
-    }
-
-    if (!is_dir($base_path)) {
-        return null;
-    }
-
-    $entries = scandir($base_path);
-    if ($entries === false) {
-        return null;
-    }
-
-    // Subdir mode: scan each subdir, comparing on sanitize_title($subdir) so
-    // a saved key like 'brand-icons' resolves the literal `Brand Icons/`
-    // folder. Without filter, scan all subdirs (legacy bare-slug fallback).
-    foreach ($entries as $subdir) {
-        if ($subdir === '.' || $subdir === '..') {
-            continue;
-        }
-        $full = "{$base_path}/{$subdir}";
-        if (!is_dir($full)) {
-            continue;
-        }
-        if ($group_key_filter !== null && sanitize_title($subdir) !== $group_key_filter) {
-            continue;
-        }
-
-        $candidate = "{$full}/{$icon_name}.svg";
-        if (file_exists($candidate)) {
-            return [
-                'path' => $candidate,
-                'url' => "{$base_url}{$subdir}/{$icon_name}.svg",
-            ];
-        }
-    }
-
-    return null;
-}
-
-/**
- * Get the SVG icon.
- *
- * @api
- * @param string $icon_name The name of the icon we want to get.
- * @return string The SVG icon file, empty string if the icon does not exist.
- */
-function get_svg_icon(string $icon_name): string {
-    $path = get_svg_icon_path($icon_name);
-
-    return $path === '' ? '' : (file_get_contents($path) ?: '');
-}
+        },
+    ]);
+});

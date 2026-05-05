@@ -22,10 +22,7 @@ $trigger_aria_label = $is_missing
     ? sprintf(__('Missing icon: %s. Click to pick a replacement.', 'acf-svg-icon-picker'), $saved_value)
     : __('Choose icon', 'acf-svg-icon-picker');
 
-// "Remove" implies removing something present; in the missing state nothing
-// is visibly there, so "Clear" reads more honestly for the same underlying
-// action (zero out the saved value).
-$clear_label = $is_missing ? __('Clear', 'acf-svg-icon-picker') : __('Remove', 'acf-svg-icon-picker');
+$clear_label = __('Clear', 'acf-svg-icon-picker');
 
 // Path-style rendering of the saved slug for the missing-state error message.
 // Composite (`nucleo.fan`) becomes `nucleo/fan.svg`; bare slugs become
@@ -66,29 +63,28 @@ $missing_path = str_replace('.', '/', $saved_value) . '.svg';
 	</div>
 
 	<?php if ($saved_value !== '' && !$is_missing) { ?>
-		<p class="acf-svg-icon-picker__slug">
-			<?php echo esc_html($saved_value); ?>
-		</p>
-	<?php } ?>
-
-	<?php if (empty($field['required'])) { ?>
-		<button type="button" class="button acf-svg-icon-picker__remove">
-			<?php echo esc_html($clear_label); ?>
-		</button>
+		<code class="acf-svg-icon-picker__slug"><?php echo esc_html($saved_value); ?></code>
 	<?php } ?>
 
 	<?php if ($is_missing) { ?>
 		<p class="acf-svg-icon-picker__missing-msg" role="status">
 			<strong><?php esc_html_e('Icon not found.', 'acf-svg-icon-picker'); ?></strong>
-			<br>
-			<?php
+			<span class="acf-svg-icon-picker__missing-path">
+				<?php
 
-			printf(
-    			// translators: %s: relative path to the missing icon, e.g. "nucleo/fan.svg".
-    			esc_html__('Please replace or check original path: %s', 'acf-svg-icon-picker'),
-    			'<code>' . esc_html($missing_path) . '</code>',
-			);
-			?>
+				// translators: %s: relative path to the missing icon, e.g. "nucleo/fan.svg".
+				printf(
+    				esc_html__('Please replace or check path: %s', 'acf-svg-icon-picker'),
+    				'<code>' . esc_html($missing_path) . '</code>',
+				);
+				?>
+			</span>
 		</p>
+	<?php } ?>
+
+	<?php if (empty($field['required'])) { ?>
+		<button type="button" class="button button-small acf-svg-icon-picker__remove">
+			<?php echo esc_html($clear_label); ?>
+		</button>
 	<?php } ?>
 </div>
