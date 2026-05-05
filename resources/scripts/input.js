@@ -33,7 +33,7 @@
               .filter(Boolean)
           : null;
         renderPopup();
-        renderIconsList();
+        buildIconsList();
         setupFilter();
       });
     }
@@ -86,12 +86,18 @@
   }
 
   function renderIcon(key, svg) {
+    // data-search is a pre-normalised lowercase, diacritic-stripped copy of
+    // the title so applyFilter() can do a single string include() per tile
+    // per keystroke. Computing it once here is much cheaper than normalising
+    // every title on every keystroke.
+    const search = normalize(svg.title);
     return `
       <li>
         <button
           type="button"
           class="acf-svg-icon-picker__option"
           data-svg="${escapeHtml(key)}"
+          data-search="${escapeHtml(search)}"
           aria-label="${escapeHtml(svg.title)}"
           tabindex="-1"
         >
@@ -102,25 +108,32 @@
     `;
   }
 
+  // Visible options only — keyboard nav skips tiles hidden by the active filter
+  // (otherwise ArrowDown could jump to invisible tiles and "stick").
   function getOptions() {
     if (!dialogEl) {
       return [];
     }
-    return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__option'));
+    return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__option')).filter(
+      (opt) => !opt.closest('li[hidden]'),
+    );
   }
 
-  // One sub-array per group <ul>. Each group is a self-contained grid for the
-  // purposes of ArrowUp/ArrowDown — column position is preserved when the user
-  // crosses into the adjacent group, rather than treating every tile in the
-  // popup as one long linear list (which made ArrowDown from a partial last row
-  // land deep into the next group at the wrong column).
+  // One sub-array per visible group <ul>. Each group is a self-contained grid
+  // for the purposes of ArrowUp/ArrowDown — column position is preserved when
+  // the user crosses into the adjacent group, rather than treating every tile
+  // in the popup as one long linear list (which made ArrowDown from a partial
+  // last row land deep into the next group at the wrong column). Filter-hidden
+  // <ul>s and tiles are excluded.
   function getOptionGroups() {
     if (!dialogEl) {
       return [];
     }
-    return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul')).map(
-      (ul) => Array.from(ul.querySelectorAll('.acf-svg-icon-picker__option')),
-    );
+    return Array.from(
+      dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul:not([hidden])'),
+    )
+      .map((ul) => Array.from(ul.querySelectorAll('li:not([hidden]) .acf-svg-icon-picker__option')))
+      .filter((group) => group.length > 0);
   }
 
   // Roving tabindex: only one option is in the natural tab order so Tab from
@@ -238,7 +251,12 @@
     moveFocusTo(target);
   }
 
-  function renderIconsList(filter = '') {
+  // Build the full icon DOM once on dialog open. Per-field allowlist is
+  // applied here (it's per-dialog-open, never per-keystroke). The keystroke
+  // filter then just toggles `hidden` on already-rendered `<li>`s — much
+  // cheaper than rebuilding innerHTML on every input event, especially with
+  // multi-thousand-icon sets.
+  function buildIconsList() {
     const { svgs, groups } = acfSvgIconPicker;
     const container = dialogEl && dialogEl.querySelector('.acf-svg-icon-picker__popup-contents');
     if (!container) {
@@ -270,25 +288,15 @@
       ? new Set(visibleGroups.flatMap((g) => g.icons || []))
       : null;
 
-    const needle = normalize(filter);
-    const matches = (key) => {
-      if (allowedKeySet && !allowedKeySet.has(key)) {
-        return false;
-      }
-      if (!needle) {
-        return true;
-      }
-      const svg = svgs[key];
-      return svg && normalize(svg.title).includes(needle);
-    };
+    const allowed = (key) => !allowedKeySet || allowedKeySet.has(key);
 
     let html = '';
 
     if (visibleGroups.length > 0) {
       html = visibleGroups
         .map((group) => {
-          const matched = (group.icons || []).filter(matches);
-          if (matched.length === 0) {
+          const allowedKeys = (group.icons || []).filter(allowed);
+          if (allowedKeys.length === 0) {
             return '';
           }
           // Slugify for a valid HTML id; falls back to a stable index if the
@@ -306,19 +314,65 @@
           const listLabelAttr = group.name
             ? `aria-labelledby="${headingId}"`
             : `aria-label="${escapeHtml(String(group.key || 'Icons'))}"`;
-          const list = matched.map((key) => renderIcon(key, svgs[key])).join('');
+          const list = allowedKeys.map((key) => renderIcon(key, svgs[key])).join('');
           return `${heading}<ul ${listLabelAttr}>${list}</ul>`;
         })
         .join('');
     } else {
-      const matched = Object.keys(svgs).filter(matches);
+      const keys = Object.keys(svgs).filter(allowed);
       html =
-        matched.length > 0
-          ? `<ul>${matched.map((key) => renderIcon(key, svgs[key])).join('')}</ul>`
-          : '';
+        keys.length > 0 ? `<ul>${keys.map((key) => renderIcon(key, svgs[key])).join('')}</ul>` : '';
     }
 
     container.innerHTML = html;
+    applyFilter('');
+  }
+
+  // Toggle visibility on already-rendered tiles. Cheap: just sets the `hidden`
+  // attribute and updates roving tabindex. Group headings (and their adjacent
+  // <ul>) get hidden when none of their tiles match.
+  function applyFilter(filter) {
+    if (!dialogEl) {
+      return;
+    }
+    const needle = normalize(filter);
+    const lists = Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul'));
+
+    lists.forEach((ul) => {
+      const tiles = Array.from(ul.querySelectorAll('li'));
+      let visible = 0;
+
+      tiles.forEach((li) => {
+        const btn = li.querySelector('.acf-svg-icon-picker__option');
+        // data-search is set once at render time (lowercased + diacritic-stripped
+        // title) so per-keystroke filtering is a single string include() — no
+        // re-normalisation per tile per keystroke.
+        const searchKey = btn ? btn.getAttribute('data-search') || '' : '';
+        const match = !needle || searchKey.includes(needle);
+        if (match) {
+          li.removeAttribute('hidden');
+          visible++;
+        } else {
+          li.setAttribute('hidden', '');
+        }
+      });
+
+      // Hide the list (and its preceding heading, if any) when nothing matched.
+      if (visible === 0) {
+        ul.setAttribute('hidden', '');
+        const heading = ul.previousElementSibling;
+        if (heading && heading.classList.contains('acf-svg-icon-picker__group-heading')) {
+          heading.setAttribute('hidden', '');
+        }
+      } else {
+        ul.removeAttribute('hidden');
+        const heading = ul.previousElementSibling;
+        if (heading && heading.classList.contains('acf-svg-icon-picker__group-heading')) {
+          heading.removeAttribute('hidden');
+        }
+      }
+    });
+
     setRovingTabindex();
   }
 
@@ -414,7 +468,7 @@
     }
 
     function displayResults() {
-      renderIconsList(this.value);
+      applyFilter(this.value);
     }
 
     function debounce(func, wait) {
