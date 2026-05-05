@@ -148,6 +148,113 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * get_svg_icon_data() returns the structured array for the 'array'
+     * return_format and for theme code that wants slug + url + path + title
+     * + group context in one call.
+     */
+    public function test_get_svg_icon_data_returns_struct_for_composite() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+
+        $data = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data('social.facebook');
+
+        $this->assertIsArray($data);
+        $this->assertSame('social.facebook', $data['slug']);
+        $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $data['path']);
+        $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $data['url']);
+        $this->assertSame('Facebook', $data['title']);
+        $this->assertSame('social', $data['group_key']);
+        $this->assertSame('Social', $data['group_name']);
+    }
+
+    /**
+     * Bare-slug saves keep the helpers' first-match-wins behaviour and have
+     * no group context — group_key/group_name fall through to null.
+     */
+    public function test_get_svg_icon_data_bare_slug_has_no_group() {
+        switch_theme('test-child-theme');
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            'path' => WP_CONTENT_DIR . '/random-location-icons/',
+            'url' => content_url() . '/random-location-icons/',
+        ]);
+
+        $data = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data('bell');
+
+        $this->assertIsArray($data);
+        $this->assertSame('bell', $data['slug']);
+        $this->assertSame('Bell', $data['title']);
+        $this->assertNull($data['group_key']);
+        $this->assertNull($data['group_name']);
+    }
+
+    /**
+     * Missing icons return null so `if ($icon = get_svg_icon_data(...))` works.
+     */
+    public function test_get_svg_icon_data_returns_null_when_missing() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+        ]);
+
+        // group_key prefix doesn't match any configured group
+        $this->assertNull(SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data('social.facebook'));
+
+        // file doesn't exist within the configured group
+        $this->assertNull(SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data('brand.does-not-exist'));
+    }
+
+    /**
+     * Per-field return_format 'array' resolves through ACF's get_field()
+     * pipeline to the same struct as the helper.
+     */
+    public function test_field_return_format_array() {
+        acf_add_local_field_group([
+            'key' => 'group_svg_icon_picker_array',
+            'title' => 'SVG Icon Picker (array format)',
+            'fields' => [
+                [
+                    'key' => 'field_svg_icon_picker_array',
+                    'label' => 'Icon',
+                    'name' => 'icon',
+                    'type' => 'svg_icon_picker',
+                    'return_format' => 'array',
+                ],
+            ],
+            'location' => [[['param' => 'post_type', 'operator' => '==', 'value' => 'post']]],
+        ]);
+
+        $post_id = self::factory()->post->create();
+        switch_theme('test-child-theme');
+        update_field('icon', 'amazon', $post_id);
+
+        $data = get_field('icon', $post_id);
+        $this->assertIsArray($data);
+        $this->assertSame('amazon', $data['slug']);
+        $this->assertSame('Amazon', $data['title']);
+        $this->assertStringContainsString('amazon.svg', $data['url']);
+    }
+
+    /**
      * Test if the _doing_it_wrong() function is called when the custom location filter is not used correctly.
      */
     public function test_custom_dir_override_wrong_filter_usage() {
@@ -502,6 +609,42 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertContains('social-2.facebook', $plugin->groups[1]['icons']);
         $this->assertArrayHasKey('social.discord', $plugin->svgs);
         $this->assertArrayHasKey('social-2.facebook', $plugin->svgs);
+    }
+
+    /**
+     * Helpers must reproduce the same group-key disambiguation the picker
+     * applies — otherwise a saved value like `social-2.facebook` renders fine
+     * in the editor but 404s from get_svg_icon_path()/get_svg_icon_uri() and
+     * the WPGraphQL resolver. Same fixture as the picker collision test.
+     */
+    public function test_get_svg_icon_path_resolves_disambiguated_group() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Social Brand',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social UI',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+
+        // Original key on second location resolves through the disambiguated form.
+        $path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('social-2.facebook');
+        $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $path);
+
+        $uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('social-2.facebook');
+        $this->assertStringEndsWith('/test-theme/custom-icons/facebook.svg', $uri);
+
+        // First group still resolves under its original key.
+        $first = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('social.discord');
+        $this->assertStringEndsWith('/test-theme/icons/discord.svg', $first);
     }
 
     /**
