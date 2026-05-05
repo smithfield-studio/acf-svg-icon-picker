@@ -60,7 +60,36 @@
           iconBtn.innerHTML = '<span aria-hidden="true">&plus;</span>';
         }
         removeBtn.classList.remove('acf-svg-icon-picker__remove--active');
+        clearMissingState(parent);
       });
+    }
+  }
+
+  // Reset a field that was rendered in the missing-asset state. Called after
+  // the user either picks a new icon or clears the value — without this, the
+  // red trim + "Icon not found" message persist until the page is reloaded,
+  // making it look like the action didn't take.
+  function clearMissingState(parent) {
+    if (!parent) {
+      return;
+    }
+    const selector = parent.querySelector('.acf-svg-icon-picker__selector');
+    const trigger = parent.querySelector('.acf-svg-icon-picker__icon');
+    const msg = parent.querySelector('.acf-svg-icon-picker__missing-msg');
+
+    if (selector) {
+      selector.classList.remove('acf-svg-icon-picker__selector--missing');
+    }
+    if (trigger) {
+      trigger.removeAttribute('title');
+      trigger.removeAttribute('data-missing-slug');
+      const label = acfSvgIconPicker && acfSvgIconPicker.chooseIconLabel;
+      if (label) {
+        trigger.setAttribute('aria-label', label);
+      }
+    }
+    if (msg) {
+      msg.remove();
     }
   }
 
@@ -440,12 +469,16 @@
       if (iconBtn) {
         iconBtn.innerHTML = `<img src="${src}" alt=""/>`;
       }
-      const removeBtn = activeItemEl
-        .closest('.acf-svg-icon-picker')
-        ?.querySelector('.acf-svg-icon-picker__remove');
+      const fieldWrapper = activeItemEl.closest('.acf-svg-icon-picker');
+      const removeBtn = fieldWrapper?.querySelector('.acf-svg-icon-picker__remove');
       if (removeBtn) {
         removeBtn.classList.add('acf-svg-icon-picker__remove--active');
       }
+      // If the field was rendered in the missing state, drop the red trim,
+      // remove the "Icon not found" message and reset the trigger's aria-label
+      // — leaving them in place after a successful pick reads as "the action
+      // didn't take".
+      clearMissingState(fieldWrapper);
       dialogEl.close();
     });
   }
