@@ -495,11 +495,12 @@
     });
 
     // Close button.
-    dialogEl
-      .querySelector('.acf-svg-icon-picker__popup-close')
-      .addEventListener('click', function () {
+    const closeBtn = dialogEl.querySelector('.acf-svg-icon-picker__popup-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
         dialogEl.close();
       });
+    }
 
     // Arrow-key navigation in the icon grid (roving tabindex).
     dialogEl.addEventListener('keydown', handleGridKeydown);

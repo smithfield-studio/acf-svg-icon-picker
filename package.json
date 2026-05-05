@@ -2,6 +2,9 @@
     "name": "acf-svg-icon-picker",
     "private": true,
     "description": "Dev tooling (lint/format) for the ACF SVG Icon Picker plugin.",
+    "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+    },
     "scripts": {
         "format": "oxfmt",
         "format:check": "oxfmt --check",

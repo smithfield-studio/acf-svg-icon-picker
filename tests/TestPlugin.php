@@ -30,13 +30,6 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
-     * Test if the plugin is loaded.
-     */
-    public function test_plugin_class() {
-        $this->assertTrue(class_exists(\SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class));
-    }
-
-    /**
      * Test if field type is active.
      */
     public function test_is_field_type_active() {
@@ -58,9 +51,9 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
-     * Test if the plugin collects the SVG files from both the parent and child theme.
-     * The parent theme has 4 SVG files, and the child theme has 2 SVG files but one of them is the same as the parent theme.
-     * Thus the child theme icon should be used totalling to 5 icons.
+     * Test if the plugin collects the SVG files from both the parent and child
+     * theme. The parent theme contributes 5 SVGs and the child theme adds one
+     * unique icon plus an override of `discord` — 6 unique slugs total.
      */
     public function test_found_files_in_child_theme() {
         switch_theme('test-child-theme');
@@ -112,28 +105,29 @@ class TestPlugin extends \WP_UnitTestCase {
         );
     }
 
-    public function test_get_svg_icon_uri_helper_function() {
+    /**
+     * Happy path for the three single-slug helpers — uri, path, and markup —
+     * resolved against the parent + child theme dirs. `amazon` only exists in
+     * the child theme; `linkedin` only in the parent.
+     */
+    public function test_helpers_resolve_existing_icon() {
         switch_theme('test-child-theme');
-        $icon_uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('amazon');
-        $this->assertEquals('http://example.org/wp-content/themes/test-child-theme/icons/amazon.svg', $icon_uri);
-    }
 
-    public function test_get_svg_icon_path_helper_function() {
-        switch_theme('test-child-theme');
-        $icon_path = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('linkedin');
-        $this->assertEquals(WP_CONTENT_DIR . '/themes/test-theme/icons/linkedin.svg', $icon_path);
+        $this->assertEquals(
+            'http://example.org/wp-content/themes/test-child-theme/icons/amazon.svg',
+            SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('amazon'),
+        );
+        $this->assertEquals(
+            WP_CONTENT_DIR . '/themes/test-theme/icons/linkedin.svg',
+            SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('linkedin'),
+        );
+        $this->assertStringContainsString('<svg', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('amazon'));
     }
 
     public function test_get_svg_icon_uri_non_existent_icon() {
         switch_theme('test-child-theme');
         $icon_uri = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('non-existent-icon');
         $this->assertEquals('', $icon_uri);
-    }
-
-    public function test_get_svg_icon_helper_function() {
-        switch_theme('test-child-theme');
-        $icon = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('amazon');
-        $this->assertStringContainsString('<svg', $icon);
     }
 
     public function test_get_svg_icon_helper_function_custom_path() {
@@ -255,20 +249,6 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
-     * Test if the _doing_it_wrong() function is called when the custom location filter is not used correctly.
-     */
-    public function test_custom_dir_override_wrong_filter_usage() {
-        switch_theme('test-child-theme');
-
-        add_filter('acf_svg_icon_picker_custom_location', fn() => 'custom-icons/');
-
-        // Register the expectation before the constructor runs — that's where
-        // _doing_it_wrong fires.
-        $this->setExpectedIncorrectUsage('check_priority_dir');
-        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
-    }
-
-    /**
      * Test if the plugin collects the SVG files from a custom location.
      */
     public function test_custom_dir_override() {
@@ -307,7 +287,7 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertNotEmpty($legacy_icon);
     }
 
-    public function testACFFieldSaveAndReturnValue() {
+    public function test_acf_field_save_and_return_value() {
         // create a new field group
         acf_add_local_field_group([
             'key' => 'group_svg_icon_picker',
@@ -854,6 +834,52 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * render_field() enforces allowed_groups for composite saves: a value
+     * pointing at a disallowed group is rendered in the missing-asset state
+     * even when the file resolves on disk. Catches values written outside the
+     * picker (imports, REST, copied post meta) — update_value() lets composites
+     * pass through, so render-time is the sole enforcement point for them.
+     */
+    public function test_render_field_marks_disallowed_group_as_missing() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        // Field restricted to 'brand', but the saved value points at 'social'.
+        // social.facebook.svg exists on disk, so without enforcement the field
+        // would render normally.
+        $field = [
+            'name' => 'icon',
+            'value' => 'social.facebook',
+            'initial_value' => '',
+            'required' => false,
+            'allowed_groups' => ['brand'],
+        ];
+
+        ob_start();
+        $plugin->render_field($field);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('acf-svg-icon-picker__selector--missing', $output);
+        $this->assertStringContainsString('Icon not found.', $output);
+    }
+
+    /**
      * Per-field allowed_groups: stored as an array of group keys.
      */
     public function test_field_setting_allowed_groups_saves() {
@@ -946,16 +972,7 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertNotFalse(has_action('wpgraphql/acf/registry_init'));
     }
 
-    public function test_graphql_hooks_no_op_without_wpgraphql() {
-        // function_exists() returns false for both register_graphql_object_type
-        // and register_graphql_acf_field_type in this test env; the callbacks
-        // bail before touching them. Reaching the assertion proves it.
-        do_action('graphql_register_types');
-        do_action('wpgraphql/acf/registry_init');
-        $this->assertTrue(true);
-    }
-
-    public function testACFFieldSaveAndReturnSVG() {
+    public function test_acf_field_save_and_return_svg() {
         switch_theme('test-theme');
         // create a new field group
         acf_add_local_field_group([

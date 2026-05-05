@@ -184,7 +184,7 @@ If [WPGraphQL](https://www.wpgraphql.com/) and [wp-graphql-acf](https://github.c
 | Filter | Signature | Default | Since |
 | --- | --- | --- | --- |
 | `acf_svg_icon_picker_folder` | `(string $folder): string` | `'icons/'` | 4.0.0 |
-| `acf_svg_icon_picker_custom_location` | `(false\|array): false\|array` — return `false` to fall through to theme dirs, an array `{path, url, name?, key?, group_by_subdir?}` for a single location, or a list of such arrays for grouped mode | `false` | 4.0.0 |
+| `acf_svg_icon_picker_custom_location` | `(false\|array): false\|array` — return `false` to fall through to theme dirs, an array `{path, url, name?, key?, group_by_subdir?}` for a single location, or a list of such arrays for grouped mode | `false` | 4.0.0 (single); 5.0.0 (list / `group_by_subdir`) |
 
 ```php
 // Change the theme-relative folder.

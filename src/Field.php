@@ -322,6 +322,12 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      *   - or the slug is ambiguous across multiple groups (we'd need an
      *     editor decision and silently picking one is the wrong default).
      *
+     * Composite values pass through unchanged even when they violate the
+     * field's `allowed_groups`. Enforcement happens at render time
+     * (render_field() marks disallowed groups as missing-asset) so editors
+     * see and can re-pick stale or imported data instead of having it
+     * silently dropped on save.
+     *
      * @param  mixed                $value   The value sent for this field.
      * @param  mixed                $post_id The post id.
      * @param  array<string, mixed> $field   The field array.
