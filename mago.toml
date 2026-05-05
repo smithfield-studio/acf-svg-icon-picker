@@ -1,12 +1,7 @@
 php-version = "8.2"
 
 [source]
-paths = [
-  "acf-svg-icon-picker.php",
-  "class-acf-field-svg-icon-picker.php",
-  "resources/views",
-  "tests",
-]
+paths = ["acf-svg-icon-picker.php", "src", "resources/views", "tests"]
 excludes = ["vendor/**", "node_modules/**", "tests/assets/**", "wp-content/**"]
 
 [formatter]

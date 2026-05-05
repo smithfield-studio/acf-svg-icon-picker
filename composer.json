@@ -41,6 +41,11 @@
         "source": "https://github.com/smithfield-studio/acf-svg-icon-picker"
     },
     "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "SmithfieldStudio\\AcfSvgIconPicker\\": "src/"
+        }
+    },
     "require": {
         "php": ">=8.2"
     },

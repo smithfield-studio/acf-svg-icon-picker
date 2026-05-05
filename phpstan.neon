@@ -11,12 +11,6 @@ parameters:
         - acf-svg-icon-picker.php
         - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
     paths:
-        - ./acf-svg-icon-picker.php
-        - ./
-    excludePaths:
-        - tests/*
-        - docs/*
-        - vendor/*
-        - node_modules/*
-        - wp-content/*
+        - acf-svg-icon-picker.php
+        - src/
     ignoreErrors:
