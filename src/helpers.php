@@ -182,6 +182,19 @@ function get_resolved_groups(): array {
 }
 
 /**
+ * Whether a custom-location filter callback is registered. The filter is
+ * authoritative when set: an unset filter (default `false`) signals theme-dir
+ * fallback; anything else signals "use what the filter provides, even if that
+ * resolves to no icons". Mirrors the field class's check_priority_dir() gate
+ * so picker UI and public helpers agree on which path is active.
+ *
+ * @internal
+ */
+function is_custom_location_filter_active(): bool {
+    return apply_filters('acf_svg_icon_picker_custom_location', false) !== false;
+}
+
+/**
  * Get the URI of an SVG icon.
  *
  * @api
@@ -190,9 +203,11 @@ function get_resolved_groups(): array {
  * @return string The URI of the icon, empty string if the icon does not exist.
  */
 function get_svg_icon_uri(string $icon_name): string {
-    $groups = get_resolved_groups();
-
-    if ($groups !== []) {
+    if (is_custom_location_filter_active()) {
+        $groups = get_resolved_groups();
+        if ($groups === []) {
+            return '';
+        }
         $resolved = resolve_in_groups($groups, $icon_name);
         return $resolved === null ? '' : $resolved['url'];
     }
@@ -217,9 +232,11 @@ function get_svg_icon_uri(string $icon_name): string {
  * @return string The path of the icon, empty string if the icon does not exist.
  */
 function get_svg_icon_path(string $icon_name): string {
-    $groups = get_resolved_groups();
-
-    if ($groups !== []) {
+    if (is_custom_location_filter_active()) {
+        $groups = get_resolved_groups();
+        if ($groups === []) {
+            return '';
+        }
         $resolved = resolve_in_groups($groups, $icon_name);
         return $resolved === null ? '' : $resolved['path'];
     }
@@ -332,10 +349,20 @@ function svg_collector(string $path, string $url): array {
         $title = ucwords($legacy_key);
         $key = sanitize_key($name);
 
-        // rawurlencode handles spaces/capitals/diacritics in the filename
-        // (esc_url alone doesn't add %-encoding for valid-ish chars). The
-        // on-disk path stays literal so file_exists() / file_get_contents()
-        // still resolve against the real file.
+        // Skip files whose name doesn't survive sanitize_key intact. The saved
+        // value is the sanitised slug, but the helpers reconstruct the on-disk
+        // filename as `{slug}.svg` — so listing `My Icon.svg` or `café.svg`
+        // would let an editor pick an icon that get_svg_icon_path() then 404s.
+        // Better to hide them from the picker entirely than to ship a value
+        // that resolves in the admin tile but breaks at render time.
+        if ($key === '' || $key !== $name) {
+            continue;
+        }
+
+        // rawurlencode handles edge-case characters that survive sanitize_key
+        // (e.g. dashes/underscores already fine, but esc_url alone doesn't add
+        // %-encoding for valid-ish chars). The on-disk path stays literal so
+        // file_exists() / file_get_contents() still resolve against the real file.
         $svg_files[$key] = [
             'key' => $key,
             'legacy_key' => $legacy_key,

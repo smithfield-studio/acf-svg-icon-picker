@@ -102,6 +102,30 @@
     }
   }
 
+  // Sync the trigger's aria-label with the current input value. The button's
+  // <img> renders alt="" so the slug only reaches assistive tech through this
+  // attribute — it has to be updated after every pick/clear, not just on the
+  // initial server render.
+  function updateTriggerLabel(parent) {
+    const trigger = parent?.querySelector('.acf-svg-icon-picker__icon');
+    const input = parent?.querySelector('input');
+    if (!trigger) {
+      return;
+    }
+    const slug = input?.value || '';
+    if (slug !== '') {
+      const tpl = acfSvgIconPicker && acfSvgIconPicker.selectedIconLabel;
+      if (tpl) {
+        trigger.setAttribute('aria-label', tpl.replace('%s', slug));
+        return;
+      }
+    }
+    const label = acfSvgIconPicker && acfSvgIconPicker.chooseIconLabel;
+    if (label) {
+      trigger.setAttribute('aria-label', label);
+    }
+  }
+
   // Reset a field that was rendered in the missing-asset state. Called after
   // the user either picks a new icon or clears the value — without this, the
   // red trim + "Icon not found" message persist until the page is reloaded,
@@ -120,14 +144,11 @@
     if (trigger) {
       trigger.removeAttribute('title');
       trigger.removeAttribute('data-missing-slug');
-      const label = acfSvgIconPicker && acfSvgIconPicker.chooseIconLabel;
-      if (label) {
-        trigger.setAttribute('aria-label', label);
-      }
     }
     if (msg) {
       msg.remove();
     }
+    updateTriggerLabel(parent);
   }
 
   function escapeHtml(str) {

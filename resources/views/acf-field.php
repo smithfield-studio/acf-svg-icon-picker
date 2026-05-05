@@ -18,9 +18,19 @@ $selector_classes = ['acf-svg-icon-picker__selector'];
 if ($is_missing) {
     $selector_classes[] = 'acf-svg-icon-picker__selector--missing';
 }
-$trigger_aria_label = $is_missing
-    ? sprintf(__('Missing icon: %s. Click to pick a replacement.', 'acf-svg-icon-picker'), $saved_value)
-    : __('Choose icon', 'acf-svg-icon-picker');
+// The trigger renders an <img alt=""> once an icon is picked, so the slug
+// only reaches assistive tech via the button's accessible name. Three states:
+// empty (no value), selected (slug + change hint), and missing (warning).
+if ($is_missing) {
+    $trigger_aria_label = sprintf(
+        __('Missing icon: %s. Click to pick a replacement.', 'acf-svg-icon-picker'),
+        $saved_value,
+    );
+} elseif ($saved_value !== '') {
+    $trigger_aria_label = sprintf(__('Selected icon: %s. Click to change.', 'acf-svg-icon-picker'), $saved_value);
+} else {
+    $trigger_aria_label = __('Choose icon', 'acf-svg-icon-picker');
+}
 
 $clear_label = __('Clear', 'acf-svg-icon-picker');
 

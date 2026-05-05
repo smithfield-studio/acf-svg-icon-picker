@@ -13,4 +13,5 @@ parameters:
     paths:
         - acf-svg-icon-picker.php
         - src/
+        - resources/views/
     ignoreErrors:

@@ -886,6 +886,75 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertSame(['nucleo', 'social'], $field['allowed_groups']);
     }
 
+    /**
+     * A malformed custom-location filter (string, etc.) is authoritative the
+     * same way an empty-but-valid one is: helpers must NOT silently substitute
+     * a theme-dir icon, otherwise the picker UI shows "no icons" while the
+     * frontend renders something. Mirrors check_priority_dir()'s _doing_it_wrong
+     * branch on the helper side.
+     */
+    public function test_helpers_dont_fall_back_when_custom_location_filter_malformed() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => 'icons/');
+
+        $this->setExpectedIncorrectUsage('check_priority_dir');
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        // `discord.svg` exists in the active theme — without the filter-active
+        // gate the helpers would have happily returned the theme-dir copy.
+        $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('discord'));
+        $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('discord'));
+    }
+
+    /**
+     * Files whose basename can't roundtrip through sanitize_key (spaces,
+     * uppercase, diacritics, etc.) get listed in the picker but the helpers
+     * reconstruct the on-disk filename as `{slug}.svg` and 404. svg_collector
+     * skips them so the picker only ever exposes pickable icons.
+     */
+    public function test_svg_collector_skips_files_with_unsanitisable_names() {
+        $tmp = sys_get_temp_dir() . '/acfsip-' . uniqid('', true);
+        mkdir($tmp);
+        try {
+            file_put_contents("{$tmp}/discord.svg", '<svg></svg>');
+            file_put_contents("{$tmp}/My Icon.svg", '<svg></svg>');
+            file_put_contents("{$tmp}/café.svg", '<svg></svg>');
+
+            add_filter('acf_svg_icon_picker_custom_location', fn() => [
+                'path' => $tmp,
+                'url' => 'http://example.org/tmp/',
+            ]);
+
+            $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+            $this->assertCount(1, $plugin->svgs);
+            $this->assertArrayHasKey('discord', $plugin->svgs);
+        } finally {
+            array_map('unlink', glob("{$tmp}/*") ?: []);
+            rmdir($tmp);
+        }
+    }
+
+    /**
+     * WPGraphQL integration smoke tests: both registration hooks must be wired
+     * with the exact hook names WPGraphQL fires. Firing them with WPGraphQL
+     * absent shouldn't fatal — the inner function_exists() guards protect
+     * against the wp-graphql-acf bridge being missing.
+     */
+    public function test_graphql_hooks_are_registered() {
+        $this->assertNotFalse(has_action('graphql_register_types'));
+        $this->assertNotFalse(has_action('wpgraphql/acf/registry_init'));
+    }
+
+    public function test_graphql_hooks_no_op_without_wpgraphql() {
+        // function_exists() returns false for both register_graphql_object_type
+        // and register_graphql_acf_field_type in this test env; the callbacks
+        // bail before touching them. Reaching the assertion proves it.
+        do_action('graphql_register_types');
+        do_action('wpgraphql/acf/registry_init');
+        $this->assertTrue(true);
+    }
+
     public function testACFFieldSaveAndReturnSVG() {
         switch_theme('test-theme');
         // create a new field group
