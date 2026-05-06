@@ -1,74 +1,86 @@
 {
-  "name": "smithfield-studio/acf-svg-icon-picker",
-  "description": "Add ACF field for selecting SVG icons.",
-  "minimum-stability": "stable",
-  "license": "MIT",
-  "keywords": [
-    "wordpress",
-    "acf",
-    "svg",
-    "icon",
-    "picker",
-    "field"
-  ],
-  "authors": [
-    {
-      "name": "Mike Sheppard",
-      "email": "mike@smithfield.studio",
-      "homepage": "https://smithfield.studio"
+    "name": "smithfield-studio/acf-svg-icon-picker",
+    "description": "Add ACF field for selecting SVG icons.",
+    "minimum-stability": "stable",
+    "license": "MIT",
+    "keywords": [
+        "wordpress",
+        "acf",
+        "svg",
+        "icon",
+        "picker",
+        "field"
+    ],
+    "authors": [
+        {
+            "name": "Mike Sheppard",
+            "email": "mike@smithfield.studio",
+            "homepage": "https://smithfield.studio"
+        },
+        {
+            "name": "Erik van der Bas",
+            "email": "erik@basedonline.nl",
+            "homepage": "https://basedonline.nl"
+        },
+        {
+            "name": "houke"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org",
+            "only": [
+                "wpackagist-plugin/*",
+                "wpackagist-theme/*"
+            ]
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/smithfield-studio/acf-svg-icon-picker/issues",
+        "source": "https://github.com/smithfield-studio/acf-svg-icon-picker"
     },
-    {
-      "name": "Erik van der Bas",
-      "email": "erik@basedonline.nl",
-      "homepage": "https://basedonline.nl"
+    "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "SmithfieldStudio\\AcfSvgIconPicker\\": "src/"
+        }
     },
-    {
-      "name": "houke"
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "carthage-software/mago": "^1.0",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^9.0",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "php-stubs/acf-pro-stubs": "^6.0",
+        "yoast/phpunit-polyfills": "^3.0",
+        "wpackagist-plugin/advanced-custom-fields": "^6.0"
+    },
+    "scripts": {
+        "format": "@php ./vendor/bin/mago format",
+        "format:check": "@php ./vendor/bin/mago format --dry-run",
+        "phpstan": "phpstan analyse --memory-limit=1G",
+        "test": "@php ./vendor/bin/phpunit"
+    },
+    "scripts-aliases": {
+        "phpstan": [
+            "stan",
+            "analyze",
+            "analyse"
+        ],
+        "test": [
+            "unit",
+            "tests"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        },
+        "platform": {
+            "php": "8.2"
+        }
     }
-  ],
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://wpackagist.org",
-      "only": [
-        "wpackagist-plugin/*",
-        "wpackagist-theme/*"
-      ]
-    }
-  ],
-  "support": {
-    "issues": "https://github.com/smithfield-studio/acf-svg-icon-picker/issues",
-    "source": "https://github.com/smithfield-studio/acf-svg-icon-picker"
-  },
-  "type": "wordpress-plugin",
-  "require-dev": {
-    "wp-coding-standards/wpcs": "^3.1",
-    "phpcompatibility/php-compatibility": "^9",
-    "phpstan/phpstan": "^1.7",
-    "phpunit/phpunit": "^9.0",
-    "szepeviktor/phpstan-wordpress": "^1.1",
-    "10up/phpcs-composer": "^3.0",
-    "php-stubs/acf-pro-stubs": "^6.0",
-    "yoast/phpunit-polyfills": "^3.0",
-    "wpackagist-plugin/advanced-custom-fields": "^6.0"
-  },
-  "scripts": {
-    "cs": "@php ./vendor/bin/phpcs",
-    "cs:fix": "@php ./vendor/bin/phpcbf",
-    "phpstan": "phpstan analyse --memory-limit=1G",
-    "test": "@php ./vendor/bin/phpunit"
-  },
-  "scripts-aliases": {
-    "cs": ["lint"],
-    "cs:fix": ["lint:fix"],
-    "phpstan": ["stan", "analyze", "analyse"],
-    "test": ["unit", "tests"]
-},
-  "config": {
-    "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true,
-      "pestphp/pest-plugin": true,
-      "composer/installers": true
-    }
-  }
 }

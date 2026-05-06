@@ -1,0 +1,19 @@
+{
+    "name": "acf-svg-icon-picker",
+    "private": true,
+    "description": "Dev tooling (lint/format) for the ACF SVG Icon Picker plugin.",
+    "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+    },
+    "scripts": {
+        "format": "oxfmt",
+        "format:check": "oxfmt --check",
+        "lint": "oxlint",
+        "lint:fix": "oxlint --fix",
+        "check": "npm run format:check && npm run lint"
+    },
+    "devDependencies": {
+        "oxfmt": "^0.42.0",
+        "oxlint": "^1.57.0"
+    }
+}

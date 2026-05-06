@@ -1,137 +1,570 @@
-(function ($) {
-  let active_item;
+(function () {
+  // Bail if the localized data is missing — without it there's nothing to render.
+  // The PHP side always emits this var via wp_add_inline_script(), so reaching
+  // this branch means script ordering broke or the field wasn't enqueued.
+  if (typeof acfSvgIconPicker === 'undefined') {
+    return;
+  }
+
+  let activeItemEl;
+  let activeAllowedGroups = null;
   let isOpen = false;
+  let dialogEl = null;
 
-  function initialize_field($el) {
-    $el.find('.acf-svg-icon-picker__selector').on('click', function (e) {
-      e.preventDefault();
-      active_item = $(this);
+  function initializeField(el) {
+    // Guard against double-init from both acf.add_action('ready append', …)
+    // and the MutationObserver fallback firing for the same element.
+    if (el.dataset.acfsipInitialized === '1') {
+      return;
+    }
+    el.dataset.acfsipInitialized = '1';
 
-      if (isOpen) {
-        return;
-      }
+    const trigger = el.querySelector('.acf-svg-icon-picker__icon');
+    const input = el.querySelector('input');
+    const removeBtn = el.querySelector('.acf-svg-icon-picker__remove');
 
-      renderPopup();
-
-      renderIconsList();
-
-      setupFilter();
-
-      // Closing
-      document
-        .querySelector('.acf-svg-icon-picker__popup-close')
-        .addEventListener('click', function (e) {
-          document.querySelector('.acf-svg-icon-picker__popup-overlay').remove();
-          isOpen = false;
-        });
-    });
-
-    // show the remove button if there is an icon selected
-    const $input = $el.find('input');
-    if ($input.length && $input.val().length != 0) {
-      $el.find('.acf-svg-icon-picker__remove').addClass('acf-svg-icon-picker__remove--active');
+    if (trigger) {
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isOpen) {
+          return;
+        }
+        activeItemEl = trigger.closest('.acf-svg-icon-picker__selector');
+        // Per-field group allowlist from the field wrapper. Empty/missing → show all.
+        const fieldWrapper = trigger.closest('.acf-svg-icon-picker');
+        const allowed = fieldWrapper ? fieldWrapper.getAttribute('data-allowed-groups') : '';
+        activeAllowedGroups = allowed
+          ? allowed
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : null;
+        renderPopup();
+        buildIconsList();
+        setupFilter();
+      });
     }
 
-    $el.find('.acf-svg-icon-picker__remove').on('click', function (e) {
-      e.preventDefault();
-      const parent = $(this).parents('.acf-svg-icon-picker');
-      parent.find('input').val('');
-      parent.find('.acf-svg-icon-picker__icon').html('<span>&plus;</span>');
+    // Show the remove button if there is an icon selected.
+    if (input && input.value.length !== 0 && removeBtn) {
+      removeBtn.classList.add('acf-svg-icon-picker__remove--active');
+    }
 
-      jQuery('.acf-svg-icon-picker__selector input').trigger('change');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const parent = removeBtn.closest('.acf-svg-icon-picker');
+        if (!parent) {
+          return;
+        }
+        const innerInput = parent.querySelector('input');
+        const iconBtn = parent.querySelector('.acf-svg-icon-picker__icon');
+        if (innerInput) {
+          innerInput.value = '';
+          innerInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (iconBtn) {
+          iconBtn.innerHTML = '<span aria-hidden="true">&plus;</span>';
+        }
+        removeBtn.classList.remove('acf-svg-icon-picker__remove--active');
+        setSlugLabel(parent, '');
+        clearMissingState(parent);
+      });
+    }
+  }
 
-      parent
-        .find('.acf-svg-icon-picker__remove')
-        .removeClass('acf-svg-icon-picker__remove--active');
+  // Keep the saved-slug `<code>` element in sync with the field value. PHP
+  // renders the `<code>` only when a value is present and resolves, so both
+  // pick (creates/updates) and clear (removes) paths have to manage it
+  // client-side — otherwise the displayed slug lags behind the input value.
+  function setSlugLabel(parent, slug) {
+    if (!parent) {
+      return;
+    }
+    const existing = parent.querySelector('.acf-svg-icon-picker__slug');
+    if (!slug) {
+      existing?.remove();
+      return;
+    }
+    if (existing) {
+      existing.textContent = slug;
+      return;
+    }
+    const label = parent.ownerDocument.createElement('code');
+    label.className = 'acf-svg-icon-picker__slug';
+    label.textContent = slug;
+    // Insert directly after the trigger row to match the PHP-rendered order.
+    const selector = parent.querySelector('.acf-svg-icon-picker__selector');
+    if (selector?.parentNode) {
+      selector.parentNode.insertBefore(label, selector.nextSibling);
+    } else {
+      parent.appendChild(label);
+    }
+  }
+
+  // Sync the trigger's aria-label with the current input value. The button's
+  // <img> renders alt="" so the slug only reaches assistive tech through this
+  // attribute — it has to be updated after every pick/clear, not just on the
+  // initial server render.
+  function updateTriggerLabel(parent) {
+    const trigger = parent?.querySelector('.acf-svg-icon-picker__icon');
+    const input = parent?.querySelector('input');
+    if (!trigger) {
+      return;
+    }
+    const slug = input?.value || '';
+    if (slug !== '') {
+      const tpl = acfSvgIconPicker && acfSvgIconPicker.selectedIconLabel;
+      if (tpl) {
+        trigger.setAttribute('aria-label', tpl.replace('%s', slug));
+        return;
+      }
+    }
+    const label = acfSvgIconPicker && acfSvgIconPicker.chooseIconLabel;
+    if (label) {
+      trigger.setAttribute('aria-label', label);
+    }
+  }
+
+  // Reset a field that was rendered in the missing-asset state. Called after
+  // the user either picks a new icon or clears the value — without this, the
+  // red trim + "Icon not found" message persist until the page is reloaded,
+  // making it look like the action didn't take.
+  function clearMissingState(parent) {
+    if (!parent) {
+      return;
+    }
+    const selector = parent.querySelector('.acf-svg-icon-picker__selector');
+    const trigger = parent.querySelector('.acf-svg-icon-picker__icon');
+    const msg = parent.querySelector('.acf-svg-icon-picker__missing-msg');
+
+    if (selector) {
+      selector.classList.remove('acf-svg-icon-picker__selector--missing');
+    }
+    if (trigger) {
+      trigger.removeAttribute('title');
+      trigger.removeAttribute('data-missing-slug');
+    }
+    if (msg) {
+      msg.remove();
+    }
+    updateTriggerLabel(parent);
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[c],
+    );
+  }
+
+  function normalize(str) {
+    return String(str)
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase();
+  }
+
+  function renderIcon(key, svg) {
+    // data-search is a pre-normalised lowercase, diacritic-stripped copy of
+    // the title so applyFilter() can do a single string include() per tile
+    // per keystroke. Computing it once here is much cheaper than normalising
+    // every title on every keystroke.
+    const search = normalize(svg.title);
+    return `
+      <li>
+        <button
+          type="button"
+          class="acf-svg-icon-picker__option"
+          data-svg="${escapeHtml(key)}"
+          data-search="${escapeHtml(search)}"
+          aria-label="${escapeHtml(svg.title)}"
+          tabindex="-1"
+        >
+          <img src="${escapeHtml(svg.url)}" alt="" />
+          <span aria-hidden="true">${escapeHtml(svg.title)}</span>
+        </button>
+      </li>
+    `;
+  }
+
+  // Visible options only — keyboard nav skips tiles hidden by the active filter
+  // (otherwise ArrowDown could jump to invisible tiles and "stick").
+  function getOptions() {
+    if (!dialogEl) {
+      return [];
+    }
+    return Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__option')).filter(
+      (opt) => !opt.closest('li[hidden]'),
+    );
+  }
+
+  // One sub-array per visible group <ul>. Each group is a self-contained grid
+  // for the purposes of ArrowUp/ArrowDown — column position is preserved when
+  // the user crosses into the adjacent group, rather than treating every tile
+  // in the popup as one long linear list (which made ArrowDown from a partial
+  // last row land deep into the next group at the wrong column). Filter-hidden
+  // <ul>s and tiles are excluded.
+  function getOptionGroups() {
+    if (!dialogEl) {
+      return [];
+    }
+    return Array.from(
+      dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul:not([hidden])'),
+    )
+      .map((ul) => Array.from(ul.querySelectorAll('li:not([hidden]) .acf-svg-icon-picker__option')))
+      .filter((group) => group.length > 0);
+  }
+
+  // Roving tabindex: only one option is in the natural tab order so Tab from
+  // the filter input lands on the grid once, then arrow keys move within it.
+  function setRovingTabindex(focusedIdx = 0) {
+    const options = getOptions();
+    if (options.length === 0) {
+      return;
+    }
+    const target = Math.max(0, Math.min(focusedIdx, options.length - 1));
+    options.forEach((opt, i) => {
+      opt.setAttribute('tabindex', i === target ? '0' : '-1');
     });
   }
 
-  function renderIconsList(svgs = acfSvgIconPicker.svgs) {
-    let popupContents = '';
+  function getColumnCount(option) {
+    const ul = option.closest('ul');
+    if (!ul) {
+      return 1;
+    }
+    const cols = window.getComputedStyle(ul).gridTemplateColumns;
+    return cols.split(' ').filter(Boolean).length || 1;
+  }
 
-    if (acfSvgIconPicker.svgs.length === 0) {
-      popupContents = `<p>${acfSvgIconPicker.msgs.no_icons}</p>`;
-    } else {
-      const iconsList = Object.keys(svgs).map((key) => {
-        const svg = svgs[key];
+  function moveFocusTo(el) {
+    if (!el) {
+      return;
+    }
+    getOptions().forEach((opt) => {
+      opt.setAttribute('tabindex', opt === el ? '0' : '-1');
+    });
+    el.focus();
+  }
 
-        return `
-          <li data-svg="${key}">
-              <img src="${svg['url']}" alt="${svg['title']}"/>
-              <span>${svg['title']}</span>
-          </li>
-        `;
-      }).join('');
+  // Resolve the focused element to its (group, row, col) position so the
+  // vertical-nav code can reason about group boundaries.
+  function findGroupCoords(activeEl, groups) {
+    for (let g = 0; g < groups.length; g++) {
+      const idx = groups[g].indexOf(activeEl);
+      if (idx === -1) {
+        continue;
+      }
+      const cols = getColumnCount(groups[g][0]);
+      return {
+        groupIdx: g,
+        cols,
+        row: Math.floor(idx / cols),
+        col: idx % cols,
+      };
+    }
+    return null;
+  }
 
-      popupContents = `<ul>${iconsList}</ul>`;
+  function handleGridKeydown(e) {
+    const options = getOptions();
+    const activeEl = dialogEl.ownerDocument.activeElement;
+    const flatIdx = options.indexOf(activeEl);
+    if (flatIdx === -1) {
+      return; // focus isn't inside the grid
     }
 
-    document.querySelector('.acf-svg-icon-picker__popup-contents').innerHTML = popupContents;
+    let target = null;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      // Left/right is linear across the whole popup — natural reading order.
+      const next = e.key === 'ArrowRight' ? flatIdx + 1 : flatIdx - 1;
+      if (next >= 0 && next < options.length) {
+        target = options[next];
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const groups = getOptionGroups();
+      const coords = findGroupCoords(activeEl, groups);
+      if (!coords) {
+        return;
+      }
+      const { groupIdx, cols, row, col } = coords;
+      const group = groups[groupIdx];
+      const lastRow = Math.floor((group.length - 1) / cols);
+
+      if (e.key === 'ArrowDown') {
+        if (row < lastRow) {
+          const next = (row + 1) * cols + col;
+          target = group[Math.min(next, group.length - 1)];
+        } else if (groupIdx + 1 < groups.length) {
+          // Drop into the next group's first row at the same column. Fall back
+          // to the last available column if the target group is narrower.
+          const next = groups[groupIdx + 1];
+          const nextCols = getColumnCount(next[0]);
+          target = next[Math.min(col, nextCols - 1, next.length - 1)];
+        }
+      } else {
+        if (row > 0) {
+          target = group[(row - 1) * cols + col];
+        } else if (groupIdx > 0) {
+          // Climb into the previous group's last row at the same column.
+          const prev = groups[groupIdx - 1];
+          const prevCols = getColumnCount(prev[0]);
+          const prevLastRow = Math.floor((prev.length - 1) / prevCols);
+          const candidate = prevLastRow * prevCols + Math.min(col, prevCols - 1);
+          target = prev[Math.min(candidate, prev.length - 1)];
+        }
+      }
+    } else if (e.key === 'Home') {
+      target = options[0];
+    } else if (e.key === 'End') {
+      target = options[options.length - 1];
+    } else {
+      return;
+    }
+
+    if (!target) {
+      return;
+    }
+    e.preventDefault();
+    moveFocusTo(target);
+  }
+
+  // Build the full icon DOM once on dialog open. Per-field allowlist is
+  // applied here (it's per-dialog-open, never per-keystroke). The keystroke
+  // filter then just toggles `hidden` on already-rendered `<li>`s — much
+  // cheaper than rebuilding innerHTML on every input event, especially with
+  // multi-thousand-icon sets.
+  function buildIconsList() {
+    const { svgs, groups } = acfSvgIconPicker;
+    const container = dialogEl && dialogEl.querySelector('.acf-svg-icon-picker__popup-contents');
+    if (!container) {
+      return;
+    }
+
+    if (!svgs || Object.keys(svgs).length === 0) {
+      // noIconsMsg is pre-translated and already contains a `<code>` tag —
+      // intentionally not escaped.
+      container.innerHTML = `<p>${acfSvgIconPicker.noIconsMsg}</p>`;
+      return;
+    }
+
+    // Per-field allowlist: when set AND groups are configured, restrict the
+    // visible groups (and the flat-svgs view) to icons in those groups.
+    //
+    // Fail open in two cases — better to show every icon than render a blank
+    // dialog with no recovery path:
+    //   1. Groups aren't configured at all (flat-mode site, allowlist saved
+    //      from a previous grouped config).
+    //   2. None of the allowlist keys match a live group (every key is stale
+    //      after a rename or removal).
+    const groupsConfigured = Array.isArray(groups) && groups.length > 0;
+    let visibleGroups = groupsConfigured ? groups : [];
+    let allowedKeySet = null;
+
+    if (groupsConfigured && activeAllowedGroups) {
+      const filtered = groups.filter((g) => activeAllowedGroups.includes(g.key));
+      if (filtered.length > 0) {
+        visibleGroups = filtered;
+        allowedKeySet = new Set(filtered.flatMap((g) => g.icons || []));
+      }
+    }
+
+    const allowed = (key) => !allowedKeySet || allowedKeySet.has(key);
+
+    let html = '';
+
+    if (visibleGroups.length > 0) {
+      html = visibleGroups
+        .map((group) => {
+          const allowedKeys = (group.icons || []).filter(allowed);
+          if (allowedKeys.length === 0) {
+            return '';
+          }
+          // Slugify for a valid HTML id; falls back to a stable index if the
+          // group provides nothing usable.
+          const slug = String(group.key || group.name || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+          const headingId = `acfsip-group-${slug || 'unnamed'}`;
+          const heading = group.name
+            ? `<h3 id="${headingId}" class="acf-svg-icon-picker__group-heading" data-group="${escapeHtml(group.key || '')}">${escapeHtml(group.name)}</h3>`
+            : '';
+          // When there's no rendered heading, point at a label string instead
+          // of an aria-labelledby pointing at a non-existent id.
+          const listLabelAttr = group.name
+            ? `aria-labelledby="${headingId}"`
+            : `aria-label="${escapeHtml(String(group.key || 'Icons'))}"`;
+          const list = allowedKeys.map((key) => renderIcon(key, svgs[key])).join('');
+          return `${heading}<ul ${listLabelAttr}>${list}</ul>`;
+        })
+        .join('');
+    } else {
+      const keys = Object.keys(svgs).filter(allowed);
+      html =
+        keys.length > 0 ? `<ul>${keys.map((key) => renderIcon(key, svgs[key])).join('')}</ul>` : '';
+    }
+
+    container.innerHTML = html;
+    applyFilter('');
+  }
+
+  // Toggle visibility on already-rendered tiles. Cheap: just sets the `hidden`
+  // attribute and updates roving tabindex. Group headings (and their adjacent
+  // <ul>) get hidden when none of their tiles match.
+  function applyFilter(filter) {
+    if (!dialogEl) {
+      return;
+    }
+    const needle = normalize(filter);
+    const lists = Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul'));
+
+    lists.forEach((ul) => {
+      const tiles = Array.from(ul.querySelectorAll('li'));
+      let visible = 0;
+
+      tiles.forEach((li) => {
+        const btn = li.querySelector('.acf-svg-icon-picker__option');
+        // data-search is set once at render time (lowercased + diacritic-stripped
+        // title) so per-keystroke filtering is a single string include() — no
+        // re-normalisation per tile per keystroke.
+        const searchKey = btn ? btn.getAttribute('data-search') || '' : '';
+        const match = !needle || searchKey.includes(needle);
+        if (match) {
+          li.removeAttribute('hidden');
+          visible++;
+        } else {
+          li.setAttribute('hidden', '');
+        }
+      });
+
+      // Hide the list (and its preceding heading, if any) when nothing matched.
+      if (visible === 0) {
+        ul.setAttribute('hidden', '');
+        const heading = ul.previousElementSibling;
+        if (heading && heading.classList.contains('acf-svg-icon-picker__group-heading')) {
+          heading.setAttribute('hidden', '');
+        }
+      } else {
+        ul.removeAttribute('hidden');
+        const heading = ul.previousElementSibling;
+        if (heading && heading.classList.contains('acf-svg-icon-picker__group-heading')) {
+          heading.removeAttribute('hidden');
+        }
+      }
+    });
+
+    setRovingTabindex();
   }
 
   function renderPopup() {
-    const popup = `
-      <div class="acf-svg-icon-picker__popup-overlay" style="--acfsip-columns: ${acfSvgIconPicker.columns};">
-        <div class="acf-svg-icon-picker__popup">
-          <div class="acf-svg-icon-picker__popup-header">
-            <h4>${acfSvgIconPicker.msgs.title}</h4>
-            <button class="acf-svg-icon-picker__popup-close" title="${acfSvgIconPicker.msgs.close}">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
-            </button>
-            <input class="acf-svg-icon-picker__filter" type="search" id="filterIcons" placeholder="${acfSvgIconPicker.msgs.filter}" />
-          </div>
-          <div class="acf-svg-icon-picker__popup-contents">
-            <!-- Icons rendered here -->
-          </div>
-        </div>
-      </div>
-    `;
+    // Native <dialog> handles focus trap, Esc to close, focus restoration, and
+    // making the page-behind inert when opened with .showModal(). The browser
+    // also implies role="dialog" and aria-modal="true" — no need to set them.
+    // Shell markup + i18n strings live in the PHP-rendered <template> so we
+    // can clone instead of building innerHTML by hand.
+    const template = document.getElementById('acfsip-dialog-template');
+    if (!template) {
+      return;
+    }
+    const fragment = template.content.cloneNode(true);
+    dialogEl = fragment.querySelector('dialog');
+    if (!dialogEl) {
+      return;
+    }
 
-    jQuery('body').append(popup);
+    document.body.appendChild(dialogEl);
+    dialogEl.showModal();
     isOpen = true;
 
-    jQuery('.acf-svg-icon-picker__popup-overlay').on('close', function () {
-      jQuery('.acf-svg-icon-picker__popup-overlay').remove();
+    // Close on backdrop click. The click target is the dialog itself when
+    // the user clicks the dimmed area outside the popup body.
+    dialogEl.addEventListener('click', function (e) {
+      if (e.target === dialogEl) {
+        dialogEl.close();
+      }
+    });
+
+    // Close button.
+    const closeBtn = dialogEl.querySelector('.acf-svg-icon-picker__popup-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        dialogEl.close();
+      });
+    }
+
+    // Arrow-key navigation in the icon grid (roving tabindex).
+    dialogEl.addEventListener('keydown', handleGridKeydown);
+
+    // Native dialog already restores focus to the trigger on close. We only
+    // need to clean up the DOM and reset state.
+    dialogEl.addEventListener('close', function () {
+      dialogEl.remove();
+      dialogEl = null;
       isOpen = false;
+    });
+
+    // Pick an icon (delegated since options are rendered after the popup mounts).
+    dialogEl.addEventListener('click', function (e) {
+      const btn = e.target.closest('.acf-svg-icon-picker__option');
+      if (!btn || !activeItemEl) {
+        return;
+      }
+      const val = btn.getAttribute('data-svg');
+      const img = btn.querySelector('img');
+      const src = img ? img.getAttribute('src') : '';
+      const input = activeItemEl.querySelector('input');
+      const iconBtn = activeItemEl.querySelector('.acf-svg-icon-picker__icon');
+      if (input) {
+        input.value = val;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (iconBtn) {
+        iconBtn.innerHTML = `<img src="${src}" alt=""/>`;
+      }
+      const fieldWrapper = activeItemEl.closest('.acf-svg-icon-picker');
+      const removeBtn = fieldWrapper?.querySelector('.acf-svg-icon-picker__remove');
+      if (removeBtn) {
+        removeBtn.classList.add('acf-svg-icon-picker__remove--active');
+      }
+      setSlugLabel(fieldWrapper, val);
+      // If the field was rendered in the missing state, drop the red trim,
+      // remove the "Icon not found" message and reset the trigger's aria-label
+      // — leaving them in place after a successful pick reads as "the action
+      // didn't take".
+      clearMissingState(fieldWrapper);
+      dialogEl.close();
     });
   }
 
-  if (typeof acf.add_action !== 'undefined') {
+  // ACF integration: fires when fields render or are appended (repeaters etc).
+  // `acf.get_fields(...)` returns a jQuery collection but `.each(this)` exposes
+  // the raw DOM node, so we never reach for $() ourselves.
+  if (typeof acf !== 'undefined' && typeof acf.add_action !== 'undefined') {
     acf.add_action('ready append', function ($el) {
       acf.get_fields({ type: 'svg_icon_picker' }, $el).each(function () {
-        initialize_field($(this));
+        initializeField(this);
       });
     });
   }
 
   function setupFilter() {
-    const iconsFilter = document.querySelector('#filterIcons');
-
-    function filterIcons(wordToMatch = '') {
-      const normalizedWord = wordToMatch
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-
-      let svgs = {};
-      Object.keys(acfSvgIconPicker.svgs).map((key) => {
-        const icon = acfSvgIconPicker.svgs[key];
-        const normalizedTitle = icon['title']
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase();
-
-        if (normalizedTitle.includes(normalizedWord)) {
-          svgs[key] = icon;
-        }
-      });
-
-      return svgs;
+    const iconsFilter = dialogEl.querySelector('.acf-svg-icon-picker__filter');
+    if (!iconsFilter) {
+      return;
     }
 
     function displayResults() {
-      svgs = filterIcons($(this).val());
-      renderIconsList(svgs);
+      applyFilter(this.value);
     }
 
     function debounce(func, wait) {
@@ -143,40 +576,35 @@
     }
 
     iconsFilter.focus();
-    iconsFilter.addEventListener('keyup', debounce(displayResults, 300));
+    // 'input' fires on every value change including paste, autocomplete,
+    // the search field's clear button, and IME/composition events — broader
+    // than 'keyup' which misses non-keyboard edits.
+    iconsFilter.addEventListener('input', debounce(displayResults, 300));
   }
 
-  jQuery(document).on('click', 'li[data-svg]', function () {
-    const val = jQuery(this).attr('data-svg');
-    const src = jQuery(this).find('img').attr('src');
-    active_item.find('input').val(val);
-    active_item.find('.acf-svg-icon-picker__icon').html(`<img src="${src}" alt=""/>`);
-    jQuery('.acf-svg-icon-picker__popup-overlay').trigger('close');
-    jQuery('.acf-svg-icon-picker__popup-overlay').remove();
-    jQuery('.acf-svg-icon-picker__selector input').trigger('change');
-
-    active_item
-      .parents('.acf-svg-icon-picker')
-      .find('.acf-svg-icon-picker__remove')
-      .addClass('acf-svg-icon-picker__remove--active');
-  });
-
-  // Use MutationObserver to detect changes in the DOM
+  // MutationObserver as a fallback for fields rendered outside the ACF
+  // lifecycle — block-editor flows where ACF doesn't fire `ready append` for
+  // dynamically-inserted fields. Runs alongside the ACF action; double-init
+  // is prevented by the `data-acfsipInitialized` flag in initializeField().
+  // Scoped to `#wpwrap` (the admin wrapper) so we're not watching mutations
+  // on the entire document.
+  const observerRoot = document.getElementById('wpwrap') || document.body;
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.addedNodes.length) {
-        $(mutation.addedNodes)
-          .find('.acf-svg-icon-picker')
-          .each(function () {
-            initialize_field($(this));
-          });
-      }
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType !== 1) {
+          return;
+        }
+        if (node.matches?.('.acf-svg-icon-picker')) {
+          initializeField(node);
+        }
+        node.querySelectorAll?.('.acf-svg-icon-picker').forEach(initializeField);
+      });
     });
   });
 
-  // Start observing the document body for changes
-  observer.observe(document.body, {
+  observer.observe(observerRoot, {
     childList: true,
     subtree: true,
   });
-})(jQuery);
+})();
