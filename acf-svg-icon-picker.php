@@ -34,16 +34,17 @@ const PLUGIN_FILE = __FILE__;
 // files. The composer.json `autoload` section is kept as IDE/PHPStan metadata
 // only.
 require_once __DIR__ . '/src/helpers.php';
-require_once __DIR__ . '/src/Field.php';
 
 /**
  * Include SVG Icon Picker field type.
  */
-function include_field_types(): void {
+function include_field_types(): void
+{
     if (!function_exists('acf_register_field_type')) {
         return;
     }
 
+    require_once __DIR__ . '/src/Field.php';
     acf_register_field_type(ACF_Field_Svg_Icon_Picker::class);
 }
 
