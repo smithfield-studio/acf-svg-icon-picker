@@ -39,8 +39,7 @@ require_once __DIR__ . '/src/helpers.php';
 /**
  * Include SVG Icon Picker field type.
  */
-function include_field_types(): void
-{
+function include_field_types(): void {
     if (!function_exists('acf_register_field_type')) {
         return;
     }
