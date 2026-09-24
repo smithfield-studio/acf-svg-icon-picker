@@ -184,29 +184,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // mistaking it for an unset field.
         $is_missing = $saved_value !== '' && empty($icon);
 
-        $allowed_groups = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
-            ? array_values(array_filter($field['allowed_groups'], is_string(...)))
-            : [];
-
         // Enforce allowed_groups on render: a saved value whose source group
         // isn't in this field's allowlist renders as missing-asset, surfacing
         // the inconsistency for the editor to re-pick. The picker UI restricts
         // *new* picks; this catches values written outside the picker
-        // (imports, REST, copied post meta, legacy data).
-        //
-        // Mirror the picker's fail-open: if the allowlist is fully stale (no
-        // matches in live groups), skip enforcement entirely so the field
-        // still shows its data. Save-time canonicalisation in update_value()
-        // uses the same rule, so the two paths agree.
-        if (!$is_missing && is_array($icon) && $icon !== [] && $allowed_groups !== [] && $this->groups !== []) {
-            $live_keys = array_column($this->groups, 'key');
-            if (array_intersect($allowed_groups, $live_keys) !== []) {
-                $group_key = $this->resolve_group_key($saved_value, $icon);
-                if ($group_key !== null && !in_array($group_key, $allowed_groups, true)) {
-                    $is_missing = true;
-                    $icon = null;
-                }
-            }
+        // (imports, REST, copied post meta, legacy data). format_value()
+        // applies the same rule on the front end.
+        if (!$is_missing && !$this->is_allowed_value($saved_value, $field)) {
+            $is_missing = true;
+            $icon = null;
         }
 
         $this->render_view('acf-field', [
@@ -214,8 +200,62 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             'saved_value' => $saved_value,
             'icon' => $icon,
             'is_missing' => $is_missing,
-            'allowed_groups' => $allowed_groups,
+            'allowed_groups' => $this->get_allowed_groups($field),
         ]);
+    }
+
+    /**
+     * The field's `allowed_groups` setting as a list of group keys.
+     *
+     * @param array<string, mixed> $field
+     * @return list<string>
+     */
+    private function get_allowed_groups(array $field): array {
+        return (
+            isset($field['allowed_groups']) && is_array($field['allowed_groups'])
+                ? array_values(array_filter($field['allowed_groups'], is_string(...)))
+                : []
+        );
+    }
+
+    /**
+     * The allowlist to enforce, or [] when there is none: no groups
+     * configured, or none of its keys match a live group. A fully stale
+     * allowlist fails open, the same as the picker JS, so the field stays
+     * usable after a group rename.
+     *
+     * @param array<string, mixed> $field
+     * @return list<string>
+     */
+    private function get_active_allowed_groups(array $field): array {
+        $allowed = $this->get_allowed_groups($field);
+        if ($allowed === [] || $this->groups === []) {
+            return [];
+        }
+
+        return array_intersect($allowed, array_column($this->groups, 'key')) === [] ? [] : $allowed;
+    }
+
+    /**
+     * Whether a saved value may be shown for this field under its active
+     * allowlist. Values that don't resolve, or have no derivable group, are
+     * left to the missing-asset handling.
+     *
+     * @param array<string, mixed> $field
+     */
+    private function is_allowed_value(string $value, array $field): bool {
+        $allowed = $this->get_active_allowed_groups($field);
+        if ($allowed === []) {
+            return true;
+        }
+
+        $icon = $this->get_icon_data($value);
+        if ($icon === []) {
+            return true;
+        }
+
+        $group_key = $this->resolve_group_key($value, $icon);
+        return $group_key === null || in_array($group_key, $allowed, true);
     }
 
     /**
@@ -288,6 +328,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * This filter is applied to the $value after it is loaded from the db and before it is returned to the template.
      *
+     * A value from a group outside the field's active `allowed_groups` formats
+     * as a missing icon ('' or null), matching the editor's missing-asset state.
+     *
      * @param mixed                $value          current value.
      * @param mixed                $post_id        The post id.
      * @param array<string, mixed> $field          The field array.
@@ -298,15 +341,17 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             return $value;
         }
 
+        $allowed = $this->is_allowed_value($value, $field);
+
         if ($field['return_format'] === 'icon') {
-            return get_svg_icon($value);
+            return $allowed ? get_svg_icon($value) : '';
         }
 
         if ($field['return_format'] === 'array') {
-            return get_svg_icon_data($value);
+            return $allowed ? get_svg_icon_data($value) : null;
         }
 
-        return $value;
+        return $allowed ? $value : '';
     }
 
     /**
@@ -345,15 +390,11 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // one of its keys matches a live group), restrict canonicalisation
         // candidates to allowed groups only. Stale allowlists fall through to
         // the unrestricted scan — same fail-open semantic the picker UI uses.
-        $allowed = isset($field['allowed_groups']) && is_array($field['allowed_groups'])
-            ? array_values(array_filter($field['allowed_groups'], is_string(...)))
-            : [];
-        $live_keys = array_column($this->groups, 'key');
-        $allowlist_active = $allowed !== [] && array_intersect($allowed, $live_keys) !== [];
+        $allowed = $this->get_active_allowed_groups($field);
 
         $matches = [];
         foreach ($this->groups as $group) {
-            if ($allowlist_active && !in_array($group['key'], $allowed, true)) {
+            if ($allowed !== [] && !in_array($group['key'], $allowed, true)) {
                 continue;
             }
             foreach ($group['icons'] as $composite) {

@@ -962,6 +962,61 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * Two named groups over the test theme's icon folders, shared by the
+     * grouped-mode tests below.
+     */
+    private function add_brand_and_social_groups(): void {
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+            [
+                'name' => 'Social',
+                'key' => 'social',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/custom-icons/',
+                'url' => content_url() . '/themes/test-theme/custom-icons/',
+            ],
+        ]);
+    }
+
+    /**
+     * allowed_groups applies on the front end as well as in the editor: a
+     * value from a disallowed group formats as a missing icon.
+     */
+    public function test_format_value_enforces_allowed_groups() {
+        switch_theme('test-theme');
+        $this->add_brand_and_social_groups();
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $field = ['allowed_groups' => ['brand']];
+
+        $this->assertSame('', $plugin->format_value('social.facebook', 0, $field + ['return_format' => 'value']));
+        $this->assertSame('', $plugin->format_value('social.facebook', 0, $field + ['return_format' => 'icon']));
+        $this->assertNull($plugin->format_value('social.facebook', 0, $field + ['return_format' => 'array']));
+
+        // Bare value that resolves to a disallowed group.
+        $this->assertSame('', $plugin->format_value('facebook', 0, $field + ['return_format' => 'value']));
+
+        $this->assertSame('brand.discord', $plugin->format_value(
+            'brand.discord',
+            0,
+            $field + ['return_format' => 'value'],
+        ));
+        $this->assertStringContainsString(
+            '<svg',
+            (string) $plugin->format_value('brand.discord', 0, $field + ['return_format' => 'icon']),
+        );
+        $this->assertIsArray($plugin->format_value('brand.discord', 0, $field + ['return_format' => 'array']));
+
+        // A fully stale allowlist fails open, as in the editor.
+        $stale = ['allowed_groups' => ['old'], 'return_format' => 'value'];
+        $this->assertSame('social.facebook', $plugin->format_value('social.facebook', 0, $stale));
+    }
+
+    /**
      * WPGraphQL integration smoke tests: both registration hooks must be wired
      * with the exact hook names WPGraphQL fires. Firing them with WPGraphQL
      * absent shouldn't fatal — the inner function_exists() guards protect
