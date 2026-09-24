@@ -1219,6 +1219,39 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * The inline JS payload carries only what input.js reads: title and url
+     * per icon, no server paths or lookup keys.
+     */
+    public function test_inline_script_payload_has_only_title_and_url() {
+        switch_theme('test-theme');
+        $this->add_brand_and_social_groups();
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $plugin->input_admin_enqueue_scripts();
+
+        try {
+            $before = wp_scripts()->get_data('acf-input-svg-icon-picker', 'before');
+            $this->assertIsArray($before);
+            $script = (string) end($before);
+            $this->assertStringStartsWith('var acfSvgIconPicker = ', $script);
+            $this->assertStringNotContainsString(WP_CONTENT_DIR, $script);
+
+            $data = json_decode(substr($script, strlen('var acfSvgIconPicker = '), -1), true);
+            $this->assertIsArray($data);
+            $this->assertCount(8, $data['svgs']);
+            foreach ($data['svgs'] as $svg) {
+                $this->assertSame(['title', 'url'], array_keys($svg));
+            }
+            $this->assertSame('Discord', $data['svgs']['brand.discord']['title']);
+            $this->assertStringEndsWith('/test-theme/icons/discord.svg', $data['svgs']['brand.discord']['url']);
+            $this->assertSame(['key', 'name', 'icons'], array_keys($data['groups'][0]));
+        } finally {
+            wp_deregister_script('acf-input-svg-icon-picker');
+            wp_deregister_style('acf-input-svg-icon-picker');
+        }
+    }
+
+    /**
      * WPGraphQL integration smoke tests: both registration hooks must be wired
      * with the exact hook names WPGraphQL fires. Firing them with WPGraphQL
      * absent shouldn't fatal — the inner function_exists() guards protect

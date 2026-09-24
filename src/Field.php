@@ -473,8 +473,15 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
                 esc_attr($this->path_suffix),
             );
 
+        // input.js reads only title and url per icon. The payload rides on
+        // every ACF screen, so server paths and lookup keys stay out of it.
+        $js_svgs = array_map(static fn(array $svg): array => [
+            'title' => $svg['title'] ?? '',
+            'url' => $svg['url'] ?? '',
+        ], $this->svgs);
+
         $data = [
-            'svgs' => $this->svgs,
+            'svgs' => $js_svgs,
             'groups' => $this->groups,
             'noIconsMsg' => $no_icons_msg,
             'noMatchesMsg' => __('No icons match your filter.', 'acf-svg-icon-picker'),
