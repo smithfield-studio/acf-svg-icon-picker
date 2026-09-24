@@ -69,7 +69,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // A custom location filter is authoritative when set: the picker uses
         // it even when it resolves to no icons, so misconfigured paths surface
         // as "no icons" rather than silently falling back to theme dirs and
-        // hiding the bug. We only fall back when the filter is unset.
+        // hiding the bug. We only fall back when the filter returns an empty
+        // value (unset, or `null` / `''` / `[]`, as in v4).
         $svgs = $this->check_priority_dir();
         $this->svgs = $svgs === null ? check_theme_dirs($this->path_suffix) : $svgs;
 
@@ -88,7 +89,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * Group disambiguation lives in `expand_locations_to_groups()` (helpers.php)
      * so the public API helpers resolve the same `groupkey.slug` shape.
      *
-     * Returns `null` when no custom-location filter is set (signal to the
+     * Returns `null` when the filter returns an empty value (signal to the
      * caller to fall back to theme dirs). Returns an empty array when a
      * filter is set but resolves to no icons — that's an authoritative
      * "no icons" verdict, not a fallback trigger.
@@ -96,11 +97,11 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * @return array<string, array<string, mixed>>|null
      */
     private function check_priority_dir(): ?array {
-        $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
-
-        if ($filter_result === false) {
+        if (!is_custom_location_filter_active()) {
             return null;
         }
+
+        $filter_result = apply_filters('acf_svg_icon_picker_custom_location', false);
 
         // Wrong-usage signal: filter returned a shape we can't interpret
         // (string, non-list array missing path/url, etc.). A *valid* filter
@@ -454,9 +455,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         // Empty-state debug hint depends on which path resolved (or didn't):
         // a custom-location filter pointing nowhere should send the user to
         // their filter callback, not at the default theme `icons/` folder.
-        $has_custom_location = apply_filters('acf_svg_icon_picker_custom_location', false) !== false;
-
-        $no_icons_msg = $has_custom_location
+        $no_icons_msg = is_custom_location_filter_active()
             ? __(
                 'No icons found. Check the paths returned by your <code>acf_svg_icon_picker_custom_location</code> filter.',
                 'acf-svg-icon-picker',

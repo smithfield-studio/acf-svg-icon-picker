@@ -182,16 +182,17 @@ function get_resolved_groups(): array {
 }
 
 /**
- * Whether a custom-location filter callback is registered. The filter is
- * authoritative when set: an unset filter (default `false`) signals theme-dir
- * fallback; anything else signals "use what the filter provides, even if that
- * resolves to no icons". Mirrors the field class's check_priority_dir() gate
- * so picker UI and public helpers agree on which path is active.
+ * Whether the custom-location filter returns a value to use. The filter is
+ * authoritative when it does: an empty result (the default `false`, or
+ * `null`, `''`, `[]`, which v4 also fell back on) signals theme-dir fallback;
+ * anything else signals "use what the filter provides, even if that resolves
+ * to no icons". The field class's check_priority_dir() uses the same gate so
+ * picker UI and public helpers agree on which path is active.
  *
  * @internal
  */
 function is_custom_location_filter_active(): bool {
-    return apply_filters('acf_svg_icon_picker_custom_location', false) !== false;
+    return !empty(apply_filters('acf_svg_icon_picker_custom_location', false));
 }
 
 /**

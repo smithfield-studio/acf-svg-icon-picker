@@ -1108,6 +1108,43 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * v4 fell back to theme icons for any empty filter result. v5 keeps that
+     * for `null`, `''` and `[]` (no _doing_it_wrong notice) and treats only a
+     * non-empty result as authoritative.
+     *
+     * @dataProvider empty_custom_location_values
+     */
+    public function test_empty_custom_location_filter_falls_back_to_theme(mixed $filter_value) {
+        switch_theme('test-theme');
+        add_filter('acf_svg_icon_picker_custom_location', fn() => $filter_value);
+
+        // No setExpectedIncorrectUsage: the test fails if _doing_it_wrong fires.
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $this->assertCount(5, $plugin->svgs);
+        $this->assertSame([], $plugin->groups);
+        $this->assertStringEndsWith(
+            '/test-theme/icons/discord.svg',
+            SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('discord'),
+        );
+        $this->assertStringEndsWith(
+            '/test-theme/icons/discord.svg',
+            SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('discord'),
+        );
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function empty_custom_location_values(): array {
+        return [
+            'null' => [null],
+            'empty string' => [''],
+            'empty array' => [[]],
+        ];
+    }
+
+    /**
      * allowed_groups applies on the front end as well as in the editor: a
      * value from a disallowed group formats as a missing icon.
      */
