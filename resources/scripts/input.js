@@ -10,6 +10,7 @@
   let activeAllowedGroups = null;
   let isOpen = false;
   let dialogEl = null;
+  let idCounter = 0;
 
   // A WeakSet rather than a data attribute: ACF duplicates repeater rows by
   // cloning their markup, and a copied attribute would skip the new row.
@@ -27,6 +28,8 @@
     const trigger = root.querySelector('.acf-svg-icon-picker__icon');
     const input = root.querySelector('input');
     const removeBtn = root.querySelector('.acf-svg-icon-picker__remove');
+
+    linkTriggerLabel(root);
 
     if (trigger) {
       trigger.addEventListener('click', function (e) {
@@ -73,9 +76,66 @@
         removeBtn.hidden = true;
         setSlugLabel(parent, '');
         clearMissingState(parent);
+        setTriggerState(parent, acfSvgIconPicker.chooseIconLabel);
         // Clear is now hidden, so focus would otherwise drop to <body>.
         iconBtn?.focus();
       });
+    }
+  }
+
+  function uniqueId(prefix) {
+    let id;
+    do {
+      idCounter++;
+      id = `${prefix}-${idCounter}`;
+    } while (document.getElementById(id));
+    return id;
+  }
+
+  // ACF's field <label> has no id, and in table layouts (repeater, group,
+  // flexible content) it sits in the column's <th> rather than the cell.
+  function findFieldLabel(root) {
+    const field = root.closest('.acf-field');
+    if (!field) {
+      return null;
+    }
+    const label = field.querySelector(':scope > .acf-label label');
+    if (label) {
+      return label;
+    }
+    const table = field.closest('table');
+    const key = field.getAttribute('data-key');
+    if (!table || !key) {
+      return null;
+    }
+    return table.querySelector(`:scope > thead th[data-key="${CSS.escape(key)}"] label`);
+  }
+
+  // Name the trigger "<field label>, <state>". Ids are assigned here rather
+  // than trusted from the markup because cloned rows and block previews can
+  // repeat them.
+  function linkTriggerLabel(root) {
+    const trigger = root.querySelector('.acf-svg-icon-picker__icon');
+    const state = root.querySelector('.acf-svg-icon-picker__state');
+    if (!trigger || !state) {
+      return;
+    }
+    state.id = uniqueId('acfsip-state');
+    const ids = [state.id];
+    const label = findFieldLabel(root);
+    if (label && label.textContent.trim() !== '') {
+      if (!label.id || document.getElementById(label.id) !== label) {
+        label.id = uniqueId('acfsip-label');
+      }
+      ids.unshift(label.id);
+    }
+    trigger.setAttribute('aria-labelledby', ids.join(' '));
+  }
+
+  function setTriggerState(parent, text) {
+    const state = parent?.querySelector('.acf-svg-icon-picker__state');
+    if (state && text) {
+      state.textContent = text;
     }
   }
 
@@ -108,30 +168,6 @@
     }
   }
 
-  // Sync the trigger's aria-label with the current input value. The button's
-  // <img> renders alt="" so the slug only reaches assistive tech through this
-  // attribute — it has to be updated after every pick/clear, not just on the
-  // initial server render.
-  function updateTriggerLabel(parent) {
-    const trigger = parent?.querySelector('.acf-svg-icon-picker__icon');
-    const input = parent?.querySelector('input');
-    if (!trigger) {
-      return;
-    }
-    const slug = input?.value || '';
-    if (slug !== '') {
-      const tpl = acfSvgIconPicker && acfSvgIconPicker.selectedIconLabel;
-      if (tpl) {
-        trigger.setAttribute('aria-label', tpl.replace('%s', slug));
-        return;
-      }
-    }
-    const label = acfSvgIconPicker && acfSvgIconPicker.chooseIconLabel;
-    if (label) {
-      trigger.setAttribute('aria-label', label);
-    }
-  }
-
   // Reset a field that was rendered in the missing-asset state. Called after
   // the user either picks a new icon or clears the value — without this, the
   // red trim + "Icon not found" message persist until the page is reloaded,
@@ -148,13 +184,11 @@
       selector.classList.remove('acf-svg-icon-picker__selector--missing');
     }
     if (trigger) {
-      trigger.removeAttribute('title');
       trigger.removeAttribute('data-missing-slug');
     }
     if (msg) {
       msg.remove();
     }
-    updateTriggerLabel(parent);
   }
 
   function escapeHtml(str) {
@@ -543,11 +577,11 @@
         removeBtn.hidden = false;
       }
       setSlugLabel(fieldWrapper, val);
-      // If the field was rendered in the missing state, drop the red trim,
-      // remove the "Icon not found" message and reset the trigger's aria-label
-      // — leaving them in place after a successful pick reads as "the action
-      // didn't take".
+      // If the field was rendered in the missing state, drop the red trim and
+      // remove the "Icon not found" message: leaving them in place after a
+      // successful pick reads as "the action didn't take".
       clearMissingState(fieldWrapper);
+      setTriggerState(fieldWrapper, btn.getAttribute('aria-label') || val);
       dialogEl.close();
     });
   }

@@ -18,19 +18,18 @@ $selector_classes = ['acf-svg-icon-picker__selector'];
 if ($is_missing) {
     $selector_classes[] = 'acf-svg-icon-picker__selector--missing';
 }
-// The trigger renders an <img alt=""> once an icon is picked, so the slug
-// only reaches assistive tech via the button's accessible name. Three states:
-// empty (no value), selected (slug + change hint), and missing (warning).
+// The trigger renders an <img alt=""> once an icon is picked, so its name comes
+// from aria-labelledby: the ACF field label (linked by input.js) plus this state
+// text, e.g. "Icon Arrow Down".
 if ($is_missing) {
-    $trigger_aria_label = sprintf(
-        __('Missing icon: %s. Click to pick a replacement.', 'acf-svg-icon-picker'),
-        $saved_value,
-    );
-} elseif ($saved_value !== '') {
-    $trigger_aria_label = sprintf(__('Selected icon: %s. Click to change.', 'acf-svg-icon-picker'), $saved_value);
+    $trigger_state = sprintf(__('Missing icon: %s', 'acf-svg-icon-picker'), $saved_value);
+} elseif (isset($icon['title']) && is_string($icon['title']) && $icon['title'] !== '') {
+    $trigger_state = $icon['title'];
 } else {
-    $trigger_aria_label = __('Choose icon', 'acf-svg-icon-picker');
+    $trigger_state = __('Choose icon', 'acf-svg-icon-picker');
 }
+$field_id = isset($field['id']) && is_string($field['id']) && $field['id'] !== '' ? $field['id'] : 'acfsip';
+$state_id = "{$field_id}-acfsip-state";
 
 $clear_label = __('Clear', 'acf-svg-icon-picker');
 
@@ -50,9 +49,8 @@ $missing_path = str_replace('.', '/', $saved_value) . '.svg';
 		<button
 			type="button"
 			class="acf-svg-icon-picker__icon"
-			aria-label="<?php echo esc_attr($trigger_aria_label); ?>"
+			aria-labelledby="<?php echo esc_attr($state_id); ?>"
 			<?php if ($is_missing) { ?>
-				title="<?php echo esc_attr(sprintf(__('Missing icon: %s', 'acf-svg-icon-picker'), $saved_value)); ?>"
 				data-missing-slug="<?php echo esc_attr($saved_value); ?>"
 			<?php } ?>
 		>
@@ -64,6 +62,11 @@ $missing_path = str_replace('.', '/', $saved_value) . '.svg';
 				<span aria-hidden="true">&plus;</span>
 			<?php } ?>
 		</button>
+		<span
+			class="acf-svg-icon-picker__state"
+			id="<?php echo esc_attr($state_id); ?>"
+			hidden
+		><?php echo esc_html($trigger_state); ?></span>
 		<input
 			type="hidden"
 			name="<?php echo esc_attr($field_name); ?>"
