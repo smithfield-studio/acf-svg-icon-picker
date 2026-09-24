@@ -195,6 +195,18 @@ function is_custom_location_filter_active(): bool {
 }
 
 /**
+ * Whether a saved value has the shape the picker writes: a bare slug, or
+ * `groupkey.slug`. Slugs hold what `sanitize_key()` keeps and group keys what
+ * `sanitize_title()` keeps, so anything with a path separator, `..` or other
+ * characters never came from the picker and must not reach a file path.
+ *
+ * @internal
+ */
+function is_valid_icon_value(string $icon_name): bool {
+    return preg_match('/^(?:[a-z0-9%_-]+\.)?[a-z0-9_-]+$/D', $icon_name) === 1;
+}
+
+/**
  * Get the URI of an SVG icon.
  *
  * @api
@@ -203,6 +215,10 @@ function is_custom_location_filter_active(): bool {
  * @return string The URI of the icon, empty string if the icon does not exist.
  */
 function get_svg_icon_uri(string $icon_name): string {
+    if (!is_valid_icon_value($icon_name)) {
+        return '';
+    }
+
     if (is_custom_location_filter_active()) {
         $groups = get_resolved_groups();
         if ($groups === []) {
@@ -232,6 +248,10 @@ function get_svg_icon_uri(string $icon_name): string {
  * @return string The path of the icon, empty string if the icon does not exist.
  */
 function get_svg_icon_path(string $icon_name): string {
+    if (!is_valid_icon_value($icon_name)) {
+        return '';
+    }
+
     if (is_custom_location_filter_active()) {
         $groups = get_resolved_groups();
         if ($groups === []) {
@@ -271,6 +291,10 @@ function get_svg_icon_path(string $icon_name): string {
  * @return array{path: string, url: string}|null
  */
 function resolve_in_groups(array $groups, string $icon_name): ?array {
+    if (!is_valid_icon_value($icon_name)) {
+        return null;
+    }
+
     if (str_contains($icon_name, '.')) {
         [$group_key, $slug] = explode('.', $icon_name, 2);
         foreach ($groups as $group) {

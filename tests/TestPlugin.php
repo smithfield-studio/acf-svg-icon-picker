@@ -982,6 +982,131 @@ class TestPlugin extends \WP_UnitTestCase {
         ]);
     }
 
+    public function test_is_valid_icon_value() {
+        $valid = ['discord', 'thunder-storm', 'snake_case', 'brand.discord', 'social-2.facebook', 'group-0.icon-1'];
+        foreach ($valid as $value) {
+            $this->assertTrue(SmithfieldStudio\AcfSvgIconPicker\is_valid_icon_value($value), $value);
+        }
+
+        $invalid = [
+            '',
+            'brand.../../../uploads/x',
+            '../custom-icons/chain',
+            'brand/discord',
+            'brand\\discord',
+            'brand..discord',
+            'brand.discord.svg',
+            '.discord',
+            'discord.',
+            'Discord',
+            'thunder storm',
+            "discord\0",
+            "discord\n",
+        ];
+        foreach ($invalid as $value) {
+            $this->assertFalse(SmithfieldStudio\AcfSvgIconPicker\is_valid_icon_value($value), $value);
+        }
+    }
+
+    /**
+     * A saved value can't walk out of its group folder. Without the check,
+     * `brand.../../../uploads/x` resolves to `{brand path}/../../../uploads/x.svg`
+     * and get_svg_icon() returns that file verbatim.
+     */
+    public function test_helpers_reject_path_traversal_in_custom_locations() {
+        switch_theme('test-theme');
+        $this->add_brand_and_social_groups();
+
+        $outside = WP_CONTENT_DIR . '/uploads/x.svg';
+        wp_mkdir_p(dirname($outside));
+        file_put_contents($outside, '<svg><script>alert(1)</script></svg>');
+
+        try {
+            $traversal = 'brand.../../../uploads/x';
+            $this->assertFileExists(WP_CONTENT_DIR . '/themes/test-theme/icons/../../../uploads/x.svg');
+            $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path($traversal));
+            $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri($traversal));
+            $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon($traversal));
+            $this->assertNull(SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data($traversal));
+
+            // Sibling folder of a group, and a bare value with separators.
+            $this->assertSame(
+                '',
+                SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('brand.../custom-icons/facebook'),
+            );
+            $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('../custom-icons/facebook'));
+
+            $this->assertStringEndsWith(
+                '/test-theme/icons/discord.svg',
+                SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('brand.discord'),
+            );
+        } finally {
+            unlink($outside);
+        }
+    }
+
+    public function test_helpers_reject_path_traversal_in_theme_mode() {
+        switch_theme('test-child-theme');
+
+        // icons/../custom-icons/chain.svg exists in the child theme.
+        $this->assertFileExists(get_theme_file_path('icons/../custom-icons/chain.svg'));
+        $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('../custom-icons/chain'));
+        $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_uri('../custom-icons/chain'));
+        $this->assertSame('', SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('../custom-icons/chain'));
+
+        $this->assertStringEndsWith(
+            '/test-child-theme/icons/amazon.svg',
+            SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_path('amazon'),
+        );
+    }
+
+    /**
+     * update_value() saves '' for values the picker can't have written, and
+     * maps the legacy human-readable form to its slug instead of dropping it.
+     */
+    public function test_update_value_rejects_invalid_values() {
+        switch_theme('test-theme');
+
+        $flat = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $this->assertSame('', $flat->update_value('../custom-icons/facebook', 0, []));
+        $this->assertSame('', $flat->update_value('Discord', 0, []));
+        $this->assertSame('discord', $flat->update_value('discord', 0, []));
+        $this->assertSame('thunder-storm', $flat->update_value('thunder storm', 0, []));
+
+        $this->add_brand_and_social_groups();
+        $grouped = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $this->assertSame('', $grouped->update_value('brand.../../../uploads/x', 0, []));
+        $this->assertSame('', $grouped->update_value('brand/discord', 0, []));
+        $this->assertSame('social.facebook', $grouped->update_value('social.facebook', 0, []));
+        $this->assertSame('brand.thunder-storm', $grouped->update_value('thunder storm', 0, []));
+    }
+
+    /**
+     * The rejection runs through ACF's save pipeline, not only direct calls.
+     */
+    public function test_update_field_saves_empty_for_traversal_value() {
+        switch_theme('test-theme');
+        acf_add_local_field_group([
+            'key' => 'group_svg_icon_picker_traversal',
+            'title' => 'SVG Icon Picker (traversal)',
+            'fields' => [
+                [
+                    'key' => 'field_svg_icon_picker_traversal',
+                    'label' => 'Icon',
+                    'name' => 'icon',
+                    'type' => 'svg_icon_picker',
+                    'return_format' => 'icon',
+                ],
+            ],
+            'location' => [[['param' => 'post_type', 'operator' => '==', 'value' => 'post']]],
+        ]);
+
+        $post_id = self::factory()->post->create();
+        update_field('field_svg_icon_picker_traversal', '../custom-icons/facebook', $post_id);
+
+        $this->assertSame('', get_field('field_svg_icon_picker_traversal', $post_id, false));
+    }
+
     /**
      * allowed_groups applies on the front end as well as in the editor: a
      * value from a disallowed group formats as a missing icon.

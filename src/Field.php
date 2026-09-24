@@ -259,6 +259,20 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     }
 
     /**
+     * Map a legacy human-readable value (`arrow down`) to the bare slug of
+     * the icon it names, or '' when no icon matches.
+     */
+    private function legacy_value_to_slug(string $value): string {
+        foreach ($this->svgs as $svg) {
+            if (isset($svg['legacy_key'], $svg['key']) && $svg['legacy_key'] === $value && is_string($svg['key'])) {
+                return $svg['key'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Identify which configured group a saved value's resolved icon came from.
      * Returns null when no group context is derivable (no groups configured,
      * or a bare slug whose entry isn't tracked under any composite key).
@@ -373,16 +387,27 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * see and can re-pick stale or imported data instead of having it
      * silently dropped on save.
      *
+     * Values the picker can't have written (path separators, `..`, other
+     * characters) are rejected and saved as ''. The one exception is the
+     * legacy human-readable form (`arrow down`), which is mapped to its slug.
+     *
      * @param  mixed                $value   The value sent for this field.
      * @param  mixed                $post_id The post id.
      * @param  array<string, mixed> $field   The field array.
      */
     public function update_value(mixed $value, mixed $post_id, $field): mixed {
-        if (!is_string($value) || $value === '' || str_contains($value, '.')) {
+        if (!is_string($value) || $value === '') {
             return $value;
         }
 
-        if ($this->groups === []) {
+        if (!is_valid_icon_value($value)) {
+            $value = $this->legacy_value_to_slug($value);
+            if ($value === '') {
+                return '';
+            }
+        }
+
+        if (str_contains($value, '.') || $this->groups === []) {
             return $value;
         }
 
