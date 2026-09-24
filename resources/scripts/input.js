@@ -11,17 +11,22 @@
   let isOpen = false;
   let dialogEl = null;
 
+  // A WeakSet rather than a data attribute: ACF duplicates repeater rows by
+  // cloning their markup, and a copied attribute would skip the new row.
+  const initializedFields = new WeakSet();
+
   function initializeField(el) {
-    // Guard against double-init from both acf.add_action('ready append', …)
-    // and the MutationObserver fallback firing for the same element.
-    if (el.dataset.acfsipInitialized === '1') {
+    // ACF passes the .acf-field wrapper, the MutationObserver passes the
+    // picker itself: resolve both to the picker so the guard sees one element.
+    const root = el.matches('.acf-svg-icon-picker') ? el : el.querySelector('.acf-svg-icon-picker');
+    if (!root || initializedFields.has(root)) {
       return;
     }
-    el.dataset.acfsipInitialized = '1';
+    initializedFields.add(root);
 
-    const trigger = el.querySelector('.acf-svg-icon-picker__icon');
-    const input = el.querySelector('input');
-    const removeBtn = el.querySelector('.acf-svg-icon-picker__remove');
+    const trigger = root.querySelector('.acf-svg-icon-picker__icon');
+    const input = root.querySelector('input');
+    const removeBtn = root.querySelector('.acf-svg-icon-picker__remove');
 
     if (trigger) {
       trigger.addEventListener('click', function (e) {
@@ -586,7 +591,7 @@
   // MutationObserver as a fallback for fields rendered outside the ACF
   // lifecycle — block-editor flows where ACF doesn't fire `ready append` for
   // dynamically-inserted fields. Runs alongside the ACF action; double-init
-  // is prevented by the `data-acfsipInitialized` flag in initializeField().
+  // is prevented by the initializedFields guard in initializeField().
   // Scoped to `#wpwrap` (the admin wrapper) so we're not watching mutations
   // on the entire document.
   const observerRoot = document.getElementById('wpwrap') || document.body;
