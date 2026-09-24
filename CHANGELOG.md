@@ -17,20 +17,21 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - **Composite save format in grouped mode** (`groupkey.slug`, e.g. `nucleo.arrow-down`). Records the editor's explicit pick so the same slug can live in multiple groups without colliding. Strict resolution — see the missing-asset note below.
 - **Missing-asset state in the editor.** When a saved value can't be resolved (file deleted, group renamed, etc.), the field renders a distinct red-tinted trigger with a `!` glyph and an inline status message ("Icon not found. Please replace or check original path: …"). Editors can spot stale data instead of mistaking it for a never-picked field. Frontend output unchanged.
 - **Native `<dialog>` popup** — focus trap, Esc-to-close, focus restoration, inert background page all handled by the browser. Icon tiles are real `<button>` elements with `aria-label`. Arrow-key navigation across the grid (Left/Right step a tile, Up/Down jump a row, Home/End to extremes), with column preservation when crossing groups.
-- **PHP 8.2 minimum**, declared via `composer.json` so install fails fast. PHP 8.1 reached EOL in Nov 2025.
 - **`'array'` return format** + new `get_svg_icon_data()` helper. Returns `{ slug, url, path, title, group_key, group_name }`, or `null` when the saved value no longer resolves. SVG markup is intentionally omitted to keep the format cheap on long lists — call `get_svg_icon($slug)` when markup is needed.
 
 ### Breaking
 
+- **PHP 8.2 minimum**, declared via `composer.json` so install fails fast. PHP 8.1 reached EOL in Nov 2025.
 - **Deprecated filters removed** — `acf_icon_path`, `acf_icon_url`, `acf_icon_path_suffix` (deprecated since 4.0.0). Use `acf_svg_icon_picker_folder` instead.
 - **Global constants removed** — `ACF_SVG_ICON_PICKER_VERSION`, `_URL`, `_PATH`. Version is now `\SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::VERSION`; URL/path are derived inline at use sites.
 - **DOM hooks renamed** for custom CSS that targets the picker UI:
   - `.acf-svg-icon-picker__popup-overlay` → `.acf-svg-icon-picker__popup::backdrop`
   - `.acf-svg-icon-picker__popup ul li[data-svg]` → `.acf-svg-icon-picker__option`
-- **Browser baseline raised** by the native `<dialog>` move: Chrome 37+, Firefox 98+, Safari 15.4+. WP admin only — frontend unchanged.
+- **Browser baseline raised** for the picker in the WP admin: Chrome 111+, Firefox 113+, Safari 16.2+ (native `<dialog>`, optional chaining, CSS `color-mix()`). Frontend unchanged.
 - **Composite save values** in grouped mode. Code that reads via `get_field()` + `get_svg_icon*()` keeps working (helpers accept both forms). Custom code that does its own slug → file lookup needs to handle the `groupkey.slug` form (`str_replace('.', '/', $slug) . '.svg'` is a reasonable default).
-- **Custom-location filter is now authoritative.** Previously, when `acf_svg_icon_picker_custom_location` resolved to no icons (wrong path, empty dir) the picker silently fell back to scanning the active theme dirs, hiding the broken config. The filter is now the source of truth when set — an empty result surfaces as "no icons" with the existing diagnostic message rather than substituting theme icons.
-- **`allowed_groups` is enforced server-side, not just in the picker UI.** A saved value whose source group isn't in the field's allowlist now renders as missing-asset (instead of silently showing an icon from a disallowed group), and `update_value`'s bare-slug → composite canonicalisation only matches within the allowlist. Stale allowlists (no live-group matches) fall open the same way the picker JS does, so misconfigured fields stay recoverable.
+- **Custom-location filter is now authoritative when it returns a value.** Previously, when `acf_svg_icon_picker_custom_location` resolved to no icons (wrong path, empty dir) the picker silently fell back to scanning the active theme dirs, hiding the broken config. A non-empty filter result is now the source of truth: when it resolves to no icons, the picker shows "no icons" with the existing diagnostic message rather than substituting theme icons. Returning `false`, `null`, `''` or `[]` still falls back to the theme dirs, without a notice.
+- **`allowed_groups` is enforced server-side, not just in the picker UI.** A saved value whose source group isn't in the field's allowlist renders as missing-asset in the editor and formats as a missing icon on the front end (`''` for the `value` and `icon` return formats, `null` for `array`), and `update_value`'s bare-slug → composite canonicalisation only matches within the allowlist. Stale allowlists (no live-group matches) fall open the same way the picker JS does, so misconfigured fields stay recoverable.
+- **Icon values are validated before a file path is built.** The helpers (`get_svg_icon()`, `get_svg_icon_path()`, `get_svg_icon_uri()`, `get_svg_icon_data()`), and so the `icon` and `array` return formats, resolve only a bare slug (`a-z`, `0-9`, `_`, `-`) or `groupkey.slug`, and return `''` / `null` for anything else. Saving any other value through the field stores `''`, except the legacy `arrow down` form, which is saved as its slug. Theme code that passes subfolder paths (`get_svg_icon('brand/logo')`) or uppercase names to the helpers no longer resolves them.
 
 ### Fixed
 
@@ -39,6 +40,12 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - Numerous a11y gaps in the popup: missing dialog role, no focus trap, no Esc handler, no focus restoration, unlabelled search input and close button, list items not keyboard-focusable.
 - `group_by_subdir` resolution for non-slug folder names — the helper now scans subdirs and matches via `sanitize_title($subdir)`, so `Brand Icons/` on disk resolves saved values like `brand-icons.foo`.
 - Group-key collisions auto-disambiguate with `-2`, `-3`, … rather than letting later locations silently overwrite or merge into earlier ones.
+- `icon.small.svg` was listed in the picker as `icon`, a value that resolves to a different file or none. Filenames with extra dots are now skipped, like other names that don't survive `sanitize_key()`.
+- The picker's inline script carries only each icon's title and URL, not absolute server paths or lookup keys.
+
+### Security
+
+- A field value containing `..` or a path separator could resolve an `.svg` outside the configured icon folders, which `get_svg_icon()` and the `icon` return format returned verbatim. Values are now validated (see Breaking). v4's theme-folder mode had the same gap.
 
 ## [4.3.1]
 

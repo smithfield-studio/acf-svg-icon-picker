@@ -141,6 +141,8 @@ $fields->addField('industry_icon', 'svg_icon_picker', [
 
 In the field-editor UI this appears as a checkbox group listing every available group; the setting is hidden when no groups are configured.
 
+A saved value from a group outside the list shows as missing in the editor, and `get_field()` returns a missing icon for it (`''`, or `null` for the `'array'` return format). An allowlist whose keys match no configured group is ignored.
+
 ## How values are stored
 
 The saved value is always a string. Its shape depends on which mode the picker is in at save time:
@@ -153,6 +155,7 @@ The saved value is always a string. Its shape depends on which mode the picker i
 Resolution rules:
 
 - The helper functions (`get_svg_icon_uri()`, `get_svg_icon_path()`, `get_svg_icon()`) accept both forms and resolve correctly.
+- Only those two shapes resolve: a slug is `a-z`, `0-9`, `_` and `-`, and a group key the same plus `%`. The helpers return `''` for anything else (a path separator, `..`, uppercase), and the field saves such a value as `''` (the legacy `arrow down` form is saved as its slug).
 - Composite values are **strict**: if the `groupkey` prefix no longer matches any configured group, the field renders the missing-asset state in the editor instead of substituting a same-slug icon from another group.
 - Bare values are **first-match-wins** across all configured locations (legacy back-compat for values saved before grouping was introduced).
 - In grouped mode, saving a previously-bare value through the picker may auto-canonicalise to the composite form when exactly one configured group claims the slug — see `update_value()`.
@@ -184,7 +187,7 @@ If [WPGraphQL](https://www.wpgraphql.com/) and [wp-graphql-acf](https://github.c
 | Filter | Signature | Default | Since |
 | --- | --- | --- | --- |
 | `acf_svg_icon_picker_folder` | `(string $folder): string` | `'icons/'` | 4.0.0 |
-| `acf_svg_icon_picker_custom_location` | `(false\|array): false\|array` — return `false` to fall through to theme dirs, an array `{path, url, name?, key?, group_by_subdir?}` for a single location, or a list of such arrays for grouped mode | `false` | 4.0.0 (single); 5.0.0 (list / `group_by_subdir`) |
+| `acf_svg_icon_picker_custom_location` | `(false\|array): false\|array`. Return `false` (or `null`, `''`, `[]`) to fall through to theme dirs, an array `{path, url, name?, key?, group_by_subdir?}` for a single location, or a list of such arrays for grouped mode | `false` | 4.0.0 (single); 5.0.0 (list / `group_by_subdir`) |
 
 ```php
 // Change the theme-relative folder.
