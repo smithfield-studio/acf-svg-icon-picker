@@ -485,11 +485,8 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             'groups' => $this->groups,
             'noIconsMsg' => $no_icons_msg,
             'noMatchesMsg' => __('No icons match your filter.', 'acf-svg-icon-picker'),
-            // Trigger aria-label strings kept in sync with resources/views/acf-field.php.
-            // JS uses these after pick/remove so the accessible name reflects the
-            // current value instead of the initial server-rendered state.
+            // Trigger state text after Clear, kept in sync with resources/views/acf-field.php.
             'chooseIconLabel' => __('Choose icon', 'acf-svg-icon-picker'),
-            'selectedIconLabel' => __('Selected icon: %s. Click to change.', 'acf-svg-icon-picker'),
         ];
 
         wp_add_inline_script(

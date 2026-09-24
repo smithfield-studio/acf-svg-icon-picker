@@ -1238,6 +1238,7 @@ class TestPlugin extends \WP_UnitTestCase {
 
             $data = json_decode(substr($script, strlen('var acfSvgIconPicker = '), -1), true);
             $this->assertIsArray($data);
+            $this->assertSame(['svgs', 'groups', 'noIconsMsg', 'noMatchesMsg', 'chooseIconLabel'], array_keys($data));
             $this->assertCount(8, $data['svgs']);
             foreach ($data['svgs'] as $svg) {
                 $this->assertSame(['title', 'url'], array_keys($svg));
