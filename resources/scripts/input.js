@@ -45,9 +45,8 @@
       });
     }
 
-    // Show the remove button if there is an icon selected.
-    if (input && input.value.length !== 0 && removeBtn) {
-      removeBtn.classList.add('acf-svg-icon-picker__remove--active');
+    if (input && removeBtn) {
+      removeBtn.hidden = input.value.length === 0;
     }
 
     if (removeBtn) {
@@ -66,9 +65,11 @@
         if (iconBtn) {
           iconBtn.innerHTML = '<span aria-hidden="true">&plus;</span>';
         }
-        removeBtn.classList.remove('acf-svg-icon-picker__remove--active');
+        removeBtn.hidden = true;
         setSlugLabel(parent, '');
         clearMissingState(parent);
+        // Clear is now hidden, so focus would otherwise drop to <body>.
+        iconBtn?.focus();
       });
     }
   }
@@ -534,7 +535,7 @@
       const fieldWrapper = activeItemEl.closest('.acf-svg-icon-picker');
       const removeBtn = fieldWrapper?.querySelector('.acf-svg-icon-picker__remove');
       if (removeBtn) {
-        removeBtn.classList.add('acf-svg-icon-picker__remove--active');
+        removeBtn.hidden = false;
       }
       setSlugLabel(fieldWrapper, val);
       // If the field was rendered in the missing state, drop the red trim,

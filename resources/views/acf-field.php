@@ -93,7 +93,11 @@ $missing_path = str_replace('.', '/', $saved_value) . '.svg';
 	<?php } ?>
 
 	<?php if (empty($field['required'])) { ?>
-		<button type="button" class="button button-small acf-svg-icon-picker__remove">
+		<button
+			type="button"
+			class="button button-small acf-svg-icon-picker__remove"
+			<?php if ($saved_value === '') { ?>hidden<?php } ?>
+		>
 			<?php echo esc_html($clear_label); ?>
 		</button>
 	<?php } ?>

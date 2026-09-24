@@ -126,12 +126,9 @@
   color: #6b7280;
 }
 
-.acf-svg-icon-picker__remove {
+/* Outranks `.wp-core-ui .button { display: inline-block }` (0,2,0). */
+.acf-svg-icon-picker .acf-svg-icon-picker__remove[hidden] {
   display: none;
-}
-
-.acf-svg-icon-picker__remove--active {
-  display: inline-block;
 }
 
 /* Popup */
