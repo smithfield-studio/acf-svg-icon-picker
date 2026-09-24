@@ -74,6 +74,10 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
         $svgs = $this->check_priority_dir();
         $this->svgs = $svgs === null ? check_theme_dirs($this->path_suffix) : $svgs;
 
+        // A static callable, so add_action dedupes it across instances and
+        // the template prints once.
+        add_action('acf/input/admin_footer', [self::class, 'render_dialog_template']);
+
         parent::__construct();
     }
 
@@ -494,25 +498,16 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
             self::VERSION,
         );
         wp_enqueue_style('acf-input-svg-icon-picker');
-
-        // add_action dedupes by callback identity, and a static guard inside
-        // render_dialog_template() ensures the markup is only emitted once
-        // even though input_admin_enqueue_scripts() runs per page-with-fields.
-        add_action('admin_footer', $this->render_dialog_template(...));
     }
 
     /**
-     * Print the picker dialog template into the admin footer once per page.
-     * JS clones template.content on open instead of building the shell via
-     * innerHTML, so static markup and i18n strings live in PHP.
+     * Print the picker dialog template on `acf/input/admin_footer`, which
+     * fires wherever ACF prints its input scripts: admin, front-end
+     * `acf_form()`, customizer and login. JS clones template.content on open
+     * instead of building the shell via innerHTML, so static markup and i18n
+     * strings live in PHP.
      */
-    public function render_dialog_template(): void {
-        static $printed = false;
-        if ($printed) {
-            return;
-        }
-        $printed = true;
-        ?>
+    public static function render_dialog_template(): void { ?>
 <template id="acfsip-dialog-template">
 	<dialog class="acf-svg-icon-picker__popup" aria-labelledby="acfsip-popup-title">
 		<div class="acf-svg-icon-picker__popup-header">
@@ -538,8 +533,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 		<div class="acf-svg-icon-picker__popup-contents"></div>
 	</dialog>
 </template>
-		<?php
-    }
+		<?php }
 
     /**
      * Get the icon data.

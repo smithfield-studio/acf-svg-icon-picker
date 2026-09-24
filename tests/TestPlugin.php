@@ -1108,6 +1108,30 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * The dialog template prints on `acf/input/admin_footer`, which ACF also
+     * fires for front-end acf_form(), the customizer and login, and prints
+     * once per footer however many field instances are hooked.
+     */
+    public function test_dialog_template_prints_on_acf_input_admin_footer() {
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $this->assertNotFalse(has_action('acf/input/admin_footer', [
+            SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class,
+            'render_dialog_template',
+        ]));
+        $this->assertFalse(has_action('admin_footer', [
+            SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::class,
+            'render_dialog_template',
+        ]));
+
+        ob_start();
+        do_action('acf/input/admin_footer');
+        $output = (string) ob_get_clean();
+
+        $this->assertSame(1, substr_count($output, 'id="acfsip-dialog-template"'));
+    }
+
+    /**
      * v4 fell back to theme icons for any empty filter result. v5 keeps that
      * for `null`, `''` and `[]` (no _doing_it_wrong notice) and treats only a
      * non-empty result as authoritative.
