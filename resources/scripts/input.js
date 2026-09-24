@@ -467,6 +467,7 @@
     }
     const needle = normalize(filter);
     const lists = Array.from(dialogEl.querySelectorAll('.acf-svg-icon-picker__popup-contents ul'));
+    let totalVisible = 0;
 
     lists.forEach((ul) => {
       const tiles = Array.from(ul.querySelectorAll('li'));
@@ -487,6 +488,8 @@
         }
       });
 
+      totalVisible += visible;
+
       // Hide the list (and its preceding heading, if any) when nothing matched.
       if (visible === 0) {
         ul.setAttribute('hidden', '');
@@ -502,6 +505,12 @@
         }
       }
     });
+
+    const status = dialogEl.querySelector('.acf-svg-icon-picker__filter-status');
+    if (status) {
+      status.textContent =
+        needle && lists.length > 0 && totalVisible === 0 ? acfSvgIconPicker.noMatchesMsg || '' : '';
+    }
 
     setRovingTabindex();
   }
@@ -520,6 +529,16 @@
     dialogEl = fragment.querySelector('dialog');
     if (!dialogEl) {
       return;
+    }
+
+    // Live region for the no-matches message. Created with the dialog so it
+    // is in the DOM before its text changes, which screen readers need.
+    const contents = dialogEl.querySelector('.acf-svg-icon-picker__popup-contents');
+    if (contents) {
+      const status = document.createElement('p');
+      status.className = 'acf-svg-icon-picker__filter-status';
+      status.setAttribute('role', 'status');
+      contents.before(status);
     }
 
     document.body.appendChild(dialogEl);

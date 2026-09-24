@@ -164,6 +164,12 @@
   display: none;
 }
 
+/* WP admin's `h3 { display: block }` and the grid `ul` outrank the UA's
+   [hidden] rule, which left empty group headings on screen while filtering. */
+.acf-svg-icon-picker__popup [hidden] {
+  display: none;
+}
+
 .acf-svg-icon-picker__popup::backdrop {
   background-color: var(--acfsip-popup-backdrop);
 }
@@ -221,6 +227,18 @@
 
 .acf-svg-icon-picker__popup-contents {
   padding: 20px;
+}
+
+/* Stays rendered while empty so screen readers keep tracking the live region. */
+.acf-svg-icon-picker__filter-status {
+  padding-block-start: 20px;
+  padding-inline: 20px;
+  color: #50575e;
+  font-size: 13px;
+}
+
+.acf-svg-icon-picker__filter-status:empty {
+  padding: 0;
 }
 
 .acf-svg-icon-picker__popup ul {
