@@ -19,6 +19,3 @@
 /screenshots export-ignore
 /tests export-ignore
 /wp-content export-ignore
-/mago.toml export-ignore
-/package-lock.json export-ignore
-/package.json export-ignore
