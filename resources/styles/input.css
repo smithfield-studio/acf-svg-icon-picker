@@ -49,7 +49,6 @@
   height: var(--acfsip-trigger-size);
   color: #aaa;
   font-weight: 300;
-  overflow: hidden;
   font-size: 20px;
   user-select: none;
 }
@@ -58,15 +57,23 @@
   background-color: var(--acfsip-trigger-bg-hover);
 }
 
+/* Round and full-size so the focus outline traces the selector circle. */
 .acf-svg-icon-picker__icon {
   padding: 15px;
   background: 0;
   border: 0;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
+}
+
+.acf-svg-icon-picker__icon:focus-visible {
+  outline: 2px solid var(--acfsip-accent-color);
+  outline-offset: 2px;
 }
 
 .acf-svg-icon-picker__icon img {
