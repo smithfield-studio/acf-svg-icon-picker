@@ -1252,6 +1252,27 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * `icon.small.svg` used to be listed as `icon` (the text before the first
+     * dot), a value that resolves to a different file or none. The full name
+     * is kept, and since `.` separates the group in saved values the file is
+     * skipped like other names that don't survive sanitize_key().
+     */
+    public function test_svg_collector_keeps_full_name_of_multi_dot_files() {
+        $tmp = sys_get_temp_dir() . '/acfsip-' . uniqid('', true);
+        mkdir($tmp);
+        try {
+            file_put_contents("{$tmp}/discord.svg", '<svg></svg>');
+            file_put_contents("{$tmp}/icon.small.svg", '<svg></svg>');
+
+            $svgs = SmithfieldStudio\AcfSvgIconPicker\svg_collector($tmp, 'http://example.org/tmp/');
+            $this->assertSame(['discord'], array_keys($svgs));
+        } finally {
+            array_map('unlink', glob("{$tmp}/*") ?: []);
+            rmdir($tmp);
+        }
+    }
+
+    /**
      * WPGraphQL integration smoke tests: both registration hooks must be wired
      * with the exact hook names WPGraphQL fires. Firing them with WPGraphQL
      * absent shouldn't fatal — the inner function_exists() guards protect

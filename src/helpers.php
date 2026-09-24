@@ -369,7 +369,7 @@ function svg_collector(string $path, string $url): array {
 
     $svg_files = [];
     foreach ($found_files as $file) {
-        $name = explode('.', $file)[0];
+        $name = pathinfo($file, PATHINFO_FILENAME);
         $legacy_key = str_replace(['-', '_'], ' ', $name);
         $title = ucwords($legacy_key);
         $key = sanitize_key($name);
@@ -379,7 +379,8 @@ function svg_collector(string $path, string $url): array {
         // filename as `{slug}.svg` — so listing `My Icon.svg` or `café.svg`
         // would let an editor pick an icon that get_svg_icon_path() then 404s.
         // Better to hide them from the picker entirely than to ship a value
-        // that resolves in the admin tile but breaks at render time.
+        // that resolves in the admin tile but breaks at render time. This
+        // covers `icon.small.svg` too: `.` is the group separator in saved values.
         if ($key === '' || $key !== $name) {
             continue;
         }
