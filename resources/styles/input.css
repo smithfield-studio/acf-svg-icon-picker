@@ -192,7 +192,9 @@
   font-weight: 600;
 }
 
+/* First in the DOM so Tab from the filter reaches the grid, last on screen. */
 .acf-svg-icon-picker__popup-close {
+  order: 1;
   padding: 0;
   border: none;
   cursor: pointer;
