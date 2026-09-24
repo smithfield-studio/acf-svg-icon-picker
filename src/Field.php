@@ -506,11 +506,21 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * `acf_form()`, customizer and login. JS clones template.content on open
      * instead of building the shell via innerHTML, so static markup and i18n
      * strings live in PHP.
+     *
+     * Close comes first so that from the focused filter, Tab reaches the grid
+     * before Close.
      */
     public static function render_dialog_template(): void { ?>
 <template id="acfsip-dialog-template">
 	<dialog class="acf-svg-icon-picker__popup" aria-labelledby="acfsip-popup-title">
 		<div class="acf-svg-icon-picker__popup-header">
+			<button
+				type="button"
+				class="acf-svg-icon-picker__popup-close"
+				aria-label="<?php esc_attr_e('Close', 'acf-svg-icon-picker'); ?>"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
+			</button>
 			<h2 id="acfsip-popup-title"><?php esc_html_e('Select an icon', 'acf-svg-icon-picker'); ?></h2>
 			<label class="screen-reader-text" for="acfsip-popup-filter">
 				<?php esc_html_e('Start typing to filter icons', 'acf-svg-icon-picker'); ?>
@@ -522,13 +532,6 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
 				placeholder="<?php esc_attr_e('Start typing to filter icons', 'acf-svg-icon-picker'); ?>"
 				autocomplete="off"
 			/>
-			<button
-				type="button"
-				class="acf-svg-icon-picker__popup-close"
-				aria-label="<?php esc_attr_e('Close', 'acf-svg-icon-picker'); ?>"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"></path></svg>
-			</button>
 		</div>
 		<div class="acf-svg-icon-picker__popup-contents"></div>
 	</dialog>

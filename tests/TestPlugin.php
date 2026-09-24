@@ -1132,6 +1132,22 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * Tab order from the focused filter is grid, then Close: Close sits
+     * before the filter in the dialog markup.
+     */
+    public function test_dialog_close_button_precedes_filter() {
+        ob_start();
+        SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker::render_dialog_template();
+        $output = (string) ob_get_clean();
+
+        $close = strpos($output, 'acf-svg-icon-picker__popup-close');
+        $filter = strpos($output, 'acf-svg-icon-picker__filter');
+        $this->assertIsInt($close);
+        $this->assertIsInt($filter);
+        $this->assertLessThan($filter, $close);
+    }
+
+    /**
      * v4 fell back to theme icons for any empty filter result. v5 keeps that
      * for `null`, `''` and `[]` (no _doing_it_wrong notice) and treats only a
      * non-empty result as authoritative.
