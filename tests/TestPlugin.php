@@ -880,6 +880,45 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * The missing-state message builds `group/slug.svg` only from a valid
+     * value. Anything else is shown as saved, escaped.
+     */
+    public function test_render_field_missing_path_uses_valid_values_only() {
+        switch_theme('test-theme');
+
+        add_filter('acf_svg_icon_picker_custom_location', fn() => [
+            [
+                'name' => 'Brand',
+                'key' => 'brand',
+                'path' => WP_CONTENT_DIR . '/themes/test-theme/icons/',
+                'url' => content_url() . '/themes/test-theme/icons/',
+            ],
+        ]);
+
+        $plugin = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $render = static function (string $value) use ($plugin): string {
+            ob_start();
+            $plugin->render_field([
+                'name' => 'icon',
+                'value' => $value,
+                'initial_value' => '',
+                'required' => false,
+            ]);
+            return (string) ob_get_clean();
+        };
+
+        $this->assertStringContainsString('<code>brand/gone.svg</code>', $render('brand.gone'));
+        $this->assertStringContainsString('<code>gone.svg</code>', $render('gone'));
+
+        $output = $render('a....b.plus');
+        $this->assertStringContainsString('<code>a....b.plus</code>', $output);
+        $this->assertStringNotContainsString('a////b/plus.svg', $output);
+
+        $output = $render('brand.<b>x</b>');
+        $this->assertStringContainsString('<code>brand.&lt;b&gt;x&lt;/b&gt;</code>', $output);
+    }
+
+    /**
      * Per-field allowed_groups: stored as an array of group keys.
      */
     public function test_field_setting_allowed_groups_saves() {

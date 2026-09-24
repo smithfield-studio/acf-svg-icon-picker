@@ -33,11 +33,14 @@ $state_id = "{$field_id}-acfsip-state";
 
 $clear_label = __('Clear', 'acf-svg-icon-picker');
 
-// Path-style rendering of the saved slug for the missing-state error message.
-// Composite (`nucleo.fan`) becomes `nucleo/fan.svg`; bare slugs become
-// `<slug>.svg`. Indicative location within the configured icon set rather
-// than an absolute filesystem path.
-$missing_path = str_replace('.', '/', $saved_value) . '.svg';
+// Path-style rendering of the saved value for the missing-state message:
+// `nucleo.fan` becomes `nucleo/fan.svg`, a bare slug `<slug>.svg`. A value the
+// picker can't have written is shown as saved rather than turned into a path.
+if (\SmithfieldStudio\AcfSvgIconPicker\is_valid_icon_value($saved_value)) {
+    $missing_path = str_replace('.', '/', $saved_value) . '.svg';
+} else {
+    $missing_path = $saved_value;
+}
 ?>
 <div
 	class="acf-svg-icon-picker"
