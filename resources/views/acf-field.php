@@ -22,6 +22,7 @@ if ($is_missing) {
 // from aria-labelledby: the ACF field label (linked by input.js) plus this state
 // text, e.g. "Icon Arrow Down".
 if ($is_missing) {
+    /* translators: %s: the saved icon value, e.g. "nucleo.fan". */
     $trigger_state = sprintf(__('Missing icon: %s', 'acf-svg-icon-picker'), $saved_value);
 } elseif (isset($icon['title']) && is_string($icon['title']) && $icon['title'] !== '') {
     $trigger_state = $icon['title'];
@@ -88,8 +89,8 @@ if (\SmithfieldStudio\AcfSvgIconPicker\is_valid_icon_value($saved_value)) {
 			<span class="acf-svg-icon-picker__missing-path">
 				<?php
 
-				// translators: %s: relative path to the missing icon, e.g. "nucleo/fan.svg".
 				printf(
+    				/* translators: %s: the missing icon's path in its set, e.g. "nucleo/fan.svg", or the saved value when it is not a valid icon name. */
     				esc_html__('Please replace or check path: %s', 'acf-svg-icon-picker'),
     				'<code>' . esc_html($missing_path) . '</code>',
 				);

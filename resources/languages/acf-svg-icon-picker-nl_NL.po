@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: Advanced Custom Fields: SVG Icon Picker 5.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/acf-svg-icon-"
 "picker\n"
-"POT-Creation-Date: 2026-09-24T15:36:57+00:00\n"
+"POT-Creation-Date: 2026-09-24T15:42:26+00:00\n"
 "PO-Revision-Date: 2026-06-09 22:17+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -60,24 +60,26 @@ msgstr "Openbare URL van het verwerkte SVG-bestand."
 msgid "Inline SVG markup for the resolved icon."
 msgstr "Inline SVG-code voor het weergegeven icoon."
 
-#: resources/views/acf-field.php:25
+#. translators: %s: the saved icon value, e.g. "nucleo.fan".
+#: resources/views/acf-field.php:26
 #, php-format
 msgid "Missing icon: %s"
 msgstr "Ontbrekend icoon: %s"
 
-#: resources/views/acf-field.php:29 src/Field.php:489
+#: resources/views/acf-field.php:30 src/Field.php:489
 msgid "Choose icon"
 msgstr "Kies icoon"
 
-#: resources/views/acf-field.php:34
+#: resources/views/acf-field.php:35
 msgid "Clear"
 msgstr "Wissen"
 
-#: resources/views/acf-field.php:84
+#: resources/views/acf-field.php:88
 msgid "Icon not found."
 msgstr "Icoon niet gevonden."
 
-#: resources/views/acf-field.php:90
+#. translators: %s: the missing icon's path in its set, e.g. "nucleo/fan.svg", or the saved value when it is not a valid icon name.
+#: resources/views/acf-field.php:94
 #, php-format
 msgid "Please replace or check path: %s"
 msgstr "Vervang of controleer het pad: %s"
