@@ -1,0 +1,17 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "singleQuote": true,
+    "sortPackageJson": false,
+    "ignorePatterns": [
+        "vendor/**",
+        "node_modules/**",
+        "wp-content/**",
+        "tests/assets/**",
+        ".github/**",
+        "**/*.php",
+        "**/*.svg",
+        "**/*.md",
+        "composer.lock",
+        "package-lock.json"
+    ]
+}

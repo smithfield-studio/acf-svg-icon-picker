@@ -1,74 +1,55 @@
-# Contributing to ACF SVG Icon Picker
+# Contributing
 
-We welcome contributions to the ACF SVG Icon Picker plugin. This document outlines the process for contributing to the plugin.
+Thanks for considering a contribution. PRs, issue reports, and reproduction
+cases are all welcome.
 
-## Pull Requests
+## Setup
 
-Pull requests are highly appreciated. To contribute to the plugin, you can fork the repository and create a new branch for your changes. When you’re done, you can create a pull request to merge your changes into the main branch.
-
-1. **Solve a problem** – Features are great, but even better is cleaning-up and fixing issues in the code that you discover.
-2. **Write tests** – This helps preserve functionality as the codebase grows and demonstrates how your change affects the code.
-3. **Write documentation** – Timber is only useful if its features are documented. This covers inline documentation of the code as well as documenting functionality and use cases in the Guides section of the documentation.
-4. **Small > big** – Better to have a few small pull requests that address specific parts of the code, than one big pull request that jumps all over.
-5. **Comply with Coding Standards** – See next section.
-
-## Preparations
-
-After you’ve forked the ACF SVG Icon Picker repository, you should install all Composer dependencies.
-
-```
+```bash
 composer install
+npm install
 ```
 
-## Coding Standards
+The PHPUnit suite runs against a real WordPress install — see
+[README.md → Tests](README.md#tests) for the one-time WP test-suite setup.
 
-We use [EasyCodingStandard](https://github.com/symplify/easy-coding-standard) for Timber’s code and code examples in the documentation, which follows the [PSR-12: Extended Coding Styles](https://www.php-fig.org/psr/psr-12/).
+## Quality bar
 
-We use tools to automatically check and apply the coding standards to our codebase (including the documentation), reducing the manual work to a minimum.
-
-### Check and apply coding standards
-
-We use EasyCodingStandard to automatically check and apply the coding standards.
+CI runs the full quality suite on every push and PR. Run them locally before
+opening a PR:
 
 ```bash
-composer cs
+composer phpstan         # PHPStan level 10 (must be clean)
+composer format          # mago — formats PHP
+composer format:check    # mago — formatting check (CI runs this)
+composer test            # PHPUnit (needs WP test suite installed once)
+
+npm run format           # oxfmt — formats JS / CSS / JSON
+npm run lint             # oxlint — JS lint
+npm run check            # format:check + lint, run together
 ```
 
-And to automatically fix issues:
-```bash
-composer cs:fix
-```
+PHP is pinned to 8.2+ via `composer.json`'s `config.platform`. Don't bump that
+without intent — it changes resolved versions of dev dependencies.
 
-We also use PHPStan to check for errors in the codebase.
+## What makes a good PR
 
-```bash
-composer analyse
-```
+- **Solve a problem.** Bug fixes and missing-feature gaps are easier to review
+  than speculative refactors.
+- **Add a test.** The PHPUnit suite exercises real WP behaviour; new behaviour
+  should land with a test that pins it down. See `tests/TestPlugin.php` for the
+  pattern (filters auto-cleared by `tearDown()`).
+- **Update the docs.** If you change a public API or a filter contract,
+  update README and CHANGELOG in the same PR.
+- **Keep PRs focused.** Smaller PRs review faster than one that refactors
+  three subsystems at once.
 
-## Unit tests
+## Coding style
 
-### Install WordPress test suite
+PHP is formatted by [mago](https://github.com/carthage-software/mago) (see
+`mago.toml`); JS / CSS / JSON by [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html).
+Both are run from `composer format` / `npm run format`. Don't fight the
+formatter — if a rule is wrong, raise it as a separate discussion.
 
-Run the following command to install the test suite on your local environment:
-
-```bash
-bash bin/install-wp-tests.sh {db_name} {db_user} {db_password} {db_host} {wp_version}
-```
-
-Replace variables with appropriate values. for example:
-
-```bash
-bash bin/install-wp-tests.sh acf_icon_test root root localhost 6.6
-```
-
-### Run unit tests
-
-Run PHPUnit test suite with the default settings and ensure your code does not break existing features.
-
-```bash
-composer test
-```
-
-## Process
-
-All PRs receive a review from at least one maintainer. We’ll do our best to do that review as soon as possible, but we’d rather go slow and get it right than merge in code with issues that just lead to trouble.
+PHPStan runs at level 10 (its highest). New code must analyse clean — no
+`@phpstan-ignore` lines without a comment explaining why.

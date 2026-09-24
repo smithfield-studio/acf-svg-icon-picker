@@ -1,0 +1,21 @@
+{
+    "name": "acf-svg-icon-picker",
+    "private": true,
+    "description": "Dev tooling (lint/format) for the ACF SVG Icon Picker plugin.",
+    "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+    },
+    "scripts": {
+        "format": "oxfmt",
+        "format:check": "oxfmt --check",
+        "lint": "oxlint",
+        "lint:fix": "oxlint --fix",
+        "check": "npm run format:check && npm run lint",
+        "translate:make-pot": "wp i18n make-pot . resources/languages/acf-svg-icon-picker.pot --slug=acf-svg-icon-picker --exclude=node_modules,vendor",
+        "translate:make-php": "wp i18n make-php resources/languages/ resources/languages"
+    },
+    "devDependencies": {
+        "oxfmt": "^0.42.0",
+        "oxlint": "^1.57.0"
+    }
+}

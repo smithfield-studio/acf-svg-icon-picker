@@ -1,16 +1,17 @@
 includes:
     - vendor/szepeviktor/phpstan-wordpress/extension.neon
 parameters:
-    level: 5 # Increase until "max"
+    level: 10 # max (PHPStan 2.x)
+    # Match the composer platform pin so PHPStan flags any 8.2+ syntax we'd
+    # accidentally introduce (readonly classes, typed const, DNF types, etc).
+    phpVersion:
+        min: 80200
+        max: 80299
     scanFiles:
         - acf-svg-icon-picker.php
         - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
     paths:
-        - ./acf-svg-icon-picker.php
-        - ./
-    excludePaths:
-        - tests/*
-        - docs/*
-        - vendor/*
-        - wp-content/*
+        - acf-svg-icon-picker.php
+        - src/
+        - resources/views/
     ignoreErrors:

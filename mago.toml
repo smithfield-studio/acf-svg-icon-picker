@@ -1,0 +1,10 @@
+php-version = "8.2"
+
+[source]
+paths = ["acf-svg-icon-picker.php", "src", "resources/views", "tests"]
+excludes = ["vendor/**", "node_modules/**", "tests/assets/**", "wp-content/**"]
+
+[formatter]
+function-brace-style = "same_line"
+method-brace-style = "same_line"
+classlike-brace-style = "same_line"
