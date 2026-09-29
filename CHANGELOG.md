@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- WPGraphQL: icon sub-fields in repeaters, flexible content and prefixed clone fields, including inside ACF blocks, resolve for every return format. The `icon` format returned the SVG markup as `slug` with an empty `url`, and `array` returned `null`.
+- WPGraphQL: a value outside the field's `allowed_groups` resolves to `null`, matching `get_field()`.
+- Legacy human-readable values (`arrow down`) that haven't been re-saved format as their icon, in `get_field()` and WPGraphQL. They returned `''` for the `icon` format, `null` for `array` and the unconverted value for `value`.
+
 ## [5.0.1]
 
 ### Fixed
@@ -24,6 +30,7 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - **Missing-asset state in the editor.** When a saved value can't be resolved (file deleted, group renamed, etc.), the field renders a distinct red-tinted trigger with a `!` glyph and an inline status message ("Icon not found. Please replace or check original path: …"). Editors can spot stale data instead of mistaking it for a never-picked field. Frontend output unchanged.
 - **Native `<dialog>` popup** — focus trap, Esc-to-close, focus restoration, inert background page all handled by the browser. Icon tiles are real `<button>` elements with `aria-label`. Arrow-key navigation across the grid (Left/Right step a tile, Up/Down jump a row, Home/End to extremes), with column preservation when crossing groups.
 - **`'array'` return format** + new `get_svg_icon_data()` helper. Returns `{ slug, url, path, title, group_key, group_name }`, or `null` when the saved value no longer resolves. SVG markup is intentionally omitted to keep the format cheap on long lists — call `get_svg_icon($slug)` when markup is needed.
+- **WPGraphQL support.** With [wp-graphql-acf](https://github.com/wp-graphql/wpgraphql-acf) active, the field is registered as an `SvgIcon` object with `slug`, `url` and `svg` fields.
 
 ### Breaking
 
@@ -38,6 +45,7 @@ A major release focused on icon-set organisation, accessibility, and sane handli
 - **Custom-location filter is now authoritative when it returns a value.** Previously, when `acf_svg_icon_picker_custom_location` resolved to no icons (wrong path, empty dir) the picker silently fell back to scanning the active theme dirs, hiding the broken config. A non-empty filter result is now the source of truth: when it resolves to no icons, the picker shows "no icons" with the existing diagnostic message rather than substituting theme icons. Returning `false`, `null`, `''` or `[]` still falls back to the theme dirs, without a notice.
 - **`allowed_groups` is enforced server-side, not just in the picker UI.** A saved value whose source group isn't in the field's allowlist renders as missing-asset in the editor and formats as a missing icon on the front end (`''` for the `value` and `icon` return formats, `null` for `array`), and `update_value`'s bare-slug → composite canonicalisation only matches within the allowlist. Stale allowlists (no live-group matches) fall open the same way the picker JS does, so misconfigured fields stay recoverable.
 - **Icon values are validated before a file path is built.** The helpers (`get_svg_icon()`, `get_svg_icon_path()`, `get_svg_icon_uri()`, `get_svg_icon_data()`), and so the `icon` and `array` return formats, resolve only a bare slug (`a-z`, `0-9`, `_`, `-`) or `groupkey.slug`, and return `''` / `null` for anything else. Saving any other value through the field stores `''`, except the legacy `arrow down` form, which is saved as its slug. Theme code that passes subfolder paths (`get_svg_icon('brand/logo')`) or uppercase names to the helpers no longer resolves them.
+- **WPGraphQL field type is `SvgIcon`.** Previously the plugin had no WPGraphQL integration. A site that exposed the field itself (for example by adding `svg_icon_picker` to `wpgraphql/acf/supported_field_types`, which resolves it as a `String`) now gets an object, so queries need a sub-selection: `myIcon { slug }` instead of `myIcon`.
 
 ### Fixed
 

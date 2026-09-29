@@ -350,6 +350,9 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
      * A value from a group outside the field's active `allowed_groups` formats
      * as a missing icon ('' or null), matching the editor's missing-asset state.
      *
+     * A legacy human-readable value (`arrow down`) formats as its slug, as
+     * update_value() only converts it when the post is next saved.
+     *
      * @param mixed                $value          current value.
      * @param mixed                $post_id        The post id.
      * @param array<string, mixed> $field          The field array.
@@ -358,6 +361,10 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     public function format_value(mixed $value, mixed $post_id, $field) {
         if (!is_string($value) || $value === '') {
             return $value;
+        }
+
+        if (!is_valid_icon_value($value)) {
+            $value = $this->legacy_value_to_slug($value) ?: $value;
         }
 
         $allowed = $this->is_allowed_value($value, $field);
