@@ -1323,6 +1323,46 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertNotFalse(has_action('wpgraphql/acf/registry_init'));
     }
 
+    /**
+     * Mirrors AcfGraphQLFieldType::get_resolver(), which passes the field
+     * type 5th and the FieldConfig 6th (#40).
+     */
+    public function test_graphql_resolver_uses_field_config_argument() {
+        switch_theme('test-theme');
+
+        $field_type = new stdClass();
+        $field_config = new class {
+            public string $value = 'discord';
+
+            public function resolve_field($root, $args, $context, $info) {
+                return $this->value;
+            }
+        };
+
+        $resolved = SmithfieldStudio\AcfSvgIconPicker\resolve_graphql_field(
+            [],
+            [],
+            null,
+            null,
+            $field_type,
+            $field_config,
+        );
+
+        $this->assertSame('discord', $resolved['slug']);
+        $this->assertStringEndsWith('/test-theme/icons/discord.svg', $resolved['url']);
+        $this->assertStringContainsString('<svg', $resolved['svg']);
+
+        $field_config->value = '';
+        $this->assertNull(SmithfieldStudio\AcfSvgIconPicker\resolve_graphql_field(
+            [],
+            [],
+            null,
+            null,
+            $field_type,
+            $field_config,
+        ));
+    }
+
     public function test_acf_field_save_and_return_svg() {
         switch_theme('test-theme');
         // create a new field group

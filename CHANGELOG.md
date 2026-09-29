@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- WPGraphQL: `SvgIcon` fields resolved to `null` on every query ([#40](https://github.com/smithfield-studio/acf-svg-icon-picker/issues/40)). The resolver read the field type argument from wp-graphql-acf instead of the `FieldConfig`.
+
 ## [5.0.0]
 
 A major release focused on icon-set organisation, accessibility, and sane handling of stale data. See [UPGRADING.md](UPGRADING.md) for the v4 → v5 walkthrough.

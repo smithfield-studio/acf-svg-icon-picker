@@ -96,20 +96,38 @@ add_action('wpgraphql/acf/registry_init', static function (): void {
 
     register_graphql_acf_field_type('svg_icon_picker', [
         'graphql_type' => 'SvgIcon',
-        'resolve' => static function ($root, $args, $context, $info, $field_config) {
-            $slug = is_object($field_config) && method_exists($field_config, 'resolve_field')
-                ? $field_config->resolve_field($root, $args, $context, $info)
-                : null;
-
-            if (!is_string($slug) || $slug === '') {
-                return null;
-            }
-
-            return [
-                'slug' => $slug,
-                'url' => get_svg_icon_uri($slug),
-                'svg' => get_svg_icon($slug),
-            ];
-        },
+        'resolve' => __NAMESPACE__ . '\\resolve_graphql_field',
     ]);
 });
+
+/**
+ * wp-graphql-acf `resolve` callback for the `SvgIcon` type.
+ *
+ * wp-graphql-acf passes the AcfGraphQLFieldType 5th and the FieldConfig 6th
+ * (see AcfGraphQLFieldType::get_resolver()). Only the FieldConfig has
+ * resolve_field(), so reading the 5th resolves every field to null (#40).
+ *
+ * @return array{slug: string, url: string, svg: string}|null
+ */
+function resolve_graphql_field(
+    mixed $root,
+    mixed $args,
+    mixed $context,
+    mixed $info,
+    mixed $field_type,
+    mixed $field_config,
+): ?array {
+    $slug = is_object($field_config) && method_exists($field_config, 'resolve_field')
+        ? $field_config->resolve_field($root, $args, $context, $info)
+        : null;
+
+    if (!is_string($slug) || $slug === '') {
+        return null;
+    }
+
+    return [
+        'slug' => $slug,
+        'url' => get_svg_icon_uri($slug),
+        'svg' => get_svg_icon($slug),
+    ];
+}
