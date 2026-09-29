@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- WPGraphQL: icon sub-fields in repeaters and flexible content resolve for every return format. The `icon` format returned the SVG markup as `slug` with an empty `url`, and `array` returned `null`.
+- WPGraphQL: icon sub-fields in repeaters, flexible content and prefixed clone fields, including inside ACF blocks, resolve for every return format. The `icon` format returned the SVG markup as `slug` with an empty `url`, and `array` returned `null`.
 - WPGraphQL: a value outside the field's `allowed_groups` resolves to `null`, matching `get_field()`.
 - Legacy human-readable values (`arrow down`) that haven't been re-saved format as their icon, in `get_field()` and WPGraphQL. They returned `''` for the `icon` format, `null` for `array` and the unconverted value for `value`.
 

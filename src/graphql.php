@@ -91,9 +91,9 @@ function resolve_graphql_field(
 
     $value = $field_config->resolve_field($root, $args, $context, $info);
 
-    // Rows restore_raw_graphql_values() can't re-read (ACF blocks, clone
-    // fields) arrive formatted. The `array` format still carries the slug;
-    // `icon` markup doesn't, and fails validation below.
+    // A value restore_raw_graphql_values() couldn't swap back arrives
+    // formatted. The `array` format still carries the slug; `icon` markup
+    // doesn't, and fails validation below.
     if (is_array($value)) {
         $value = $value['slug'] ?? null;
     }
@@ -118,14 +118,14 @@ function resolve_graphql_field(
 /**
  * `wpgraphql/acf/field_value` callback.
  *
- * wp-graphql-acf reads repeater and flexible content fields with ACF
+ * wp-graphql-acf reads repeater, flexible content and clone fields with ACF
  * formatting on, and ACF drops each sub-field's saved value from the row when
  * it formats it. Icon sub-fields using the `icon` return format would reach
  * resolve_graphql_field() as SVG markup with no slug, so this swaps the saved
  * values back in.
  *
- * Only runs for top-level fields read by ID. ACF block data and sub-fields
- * are read differently by wp-graphql-acf and keep their formatted values.
+ * Only runs for top-level fields. Sub-fields are resolved from their parent's
+ * value, which this has already restored.
  *
  * @internal
  */
@@ -133,16 +133,8 @@ function restore_raw_graphql_values(mixed $value, mixed $acf_field, mixed $root,
     if (
         !is_array($value)
         || !is_array($acf_field)
-        || !in_array($acf_field['type'] ?? null, ['repeater', 'flexible_content'], true)
-        || !is_string($acf_field['key'] ?? null)
-        || !is_int($node_id) && !is_string($node_id)
-        || empty($node_id)
+        || !in_array($acf_field['type'] ?? null, ['repeater', 'flexible_content', 'clone'], true)
     ) {
-        return $value;
-    }
-
-    $node = is_array($root) ? $root['node'] ?? null : null;
-    if (is_array($node) && isset($node['blockName'])) {
         return $value;
     }
 
@@ -151,13 +143,49 @@ function restore_raw_graphql_values(mixed $value, mixed $acf_field, mixed $root,
         return $value;
     }
 
-    return restore_raw_icon_values($acf_field, get_field($acf_field['key'], $node_id, false), $value);
+    $raw = read_raw_graphql_value($acf_field, $root, $node_id);
+
+    return $raw === null ? $value : restore_raw_icon_values($acf_field, $raw, $value);
+}
+
+/**
+ * Read a top-level field unformatted from the same source
+ * FieldConfig::resolve_field() read it from: an ACF block's attributes, or
+ * the node's meta.
+ *
+ * @internal
+ * @param array<mixed> $acf_field
+ */
+function read_raw_graphql_value(array $acf_field, mixed $root, mixed $node_id): mixed {
+    $node = is_array($root) ? $root['node'] ?? null : null;
+
+    if (is_array($node) && isset($node['blockName'])) {
+        $attrs = $node['attrs'] ?? null;
+        $name = $acf_field['name'] ?? null;
+        if (!is_array($attrs) || !is_string($name) || !function_exists('acf_get_block_id')) {
+            return null;
+        }
+
+        $block_id = acf_ensure_block_id_prefix(acf_get_block_id($attrs));
+        acf_setup_meta(is_array($attrs['data'] ?? null) ? $attrs['data'] : [], $block_id, true);
+        $raw = get_field($name, $block_id, false);
+        acf_reset_meta($block_id);
+
+        return $raw;
+    }
+
+    $key = $acf_field['key'] ?? null;
+    if (!is_string($key) || !is_int($node_id) && !is_string($node_id) || empty($node_id)) {
+        return null;
+    }
+
+    return get_field($key, $node_id, false);
 }
 
 /**
  * Replace formatted svg_icon_picker values inside a formatted ACF value with
- * the matching saved values, walking repeater, flexible content and group
- * sub-fields.
+ * the matching saved values, walking repeater, flexible content, group and
+ * clone sub-fields.
  *
  * @internal
  * @param array<mixed> $field ACF field array.
@@ -175,6 +203,11 @@ function restore_raw_icon_values(array $field, mixed $raw, mixed $formatted): mi
 
     if ($type === 'group') {
         return restore_raw_icon_row($field['sub_fields'] ?? null, $raw, $formatted);
+    }
+
+    // ACF's clone field formats sub-fields under their original name.
+    if ($type === 'clone') {
+        return restore_raw_icon_row($field['sub_fields'] ?? null, $raw, $formatted, '__name');
     }
 
     if ($type === 'repeater') {
@@ -199,8 +232,14 @@ function restore_raw_icon_values(array $field, mixed $raw, mixed $formatted): mi
  * Formatted rows are keyed by sub-field name, saved rows by sub-field key.
  *
  * @internal
+ * @param string $name_key The sub-field property the container formats under.
  */
-function restore_raw_icon_row(mixed $sub_fields, mixed $raw_row, mixed $formatted_row): mixed {
+function restore_raw_icon_row(
+    mixed $sub_fields,
+    mixed $raw_row,
+    mixed $formatted_row,
+    string $name_key = '_name',
+): mixed {
     if (!is_array($sub_fields) || !is_array($raw_row) || !is_array($formatted_row)) {
         return $formatted_row;
     }
@@ -211,7 +250,7 @@ function restore_raw_icon_row(mixed $sub_fields, mixed $raw_row, mixed $formatte
         }
 
         $key = $sub_field['key'] ?? null;
-        $name = $sub_field['_name'] ?? $sub_field['name'] ?? null;
+        $name = $sub_field[$name_key] ?? $sub_field['name'] ?? null;
         if (
             !is_string($key)
             || !is_string($name)

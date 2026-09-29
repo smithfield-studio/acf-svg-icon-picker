@@ -182,7 +182,7 @@ If [WPGraphQL](https://www.wpgraphql.com/) and [wp-graphql-acf](https://github.c
 
 `slug` is the bare slug in flat mode and `groupkey.slug` in grouped mode; `url` and `svg` are resolved using the same helpers as PHP-side code, so all three filter shapes (single, list, `group_by_subdir`) are honoured.
 
-The field's `return_format` doesn't change the GraphQL output, including inside groups, repeaters and flexible content. An empty field, or a value outside the field's `allowed_groups`, resolves to `null`.
+The field's `return_format` doesn't change the GraphQL output, including inside groups, repeaters, flexible content, clone fields and ACF blocks. An empty field, or a value outside the field's `allowed_groups`, resolves to `null`.
 
 ## Filters
 

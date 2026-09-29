@@ -1516,6 +1516,31 @@ class TestPlugin extends \WP_UnitTestCase {
         $this->assertSame('<svg></svg>', $restored[1]['icon']);
     }
 
+    /**
+     * Prefixed clones save sub-fields under clone-prefixed keys and names,
+     * and ACF formats them under the original name (`__name`).
+     */
+    public function test_restore_raw_icon_values_clone() {
+        $field = [
+            'type' => 'clone',
+            'sub_fields' => [
+                [
+                    'key' => 'field_pfx_field_src_icon',
+                    'name' => 'pfx_src_icon',
+                    '_name' => 'pfx_src_icon',
+                    '__name' => 'src_icon',
+                    'type' => 'svg_icon_picker',
+                ],
+            ],
+        ];
+        $raw = ['field_pfx_field_src_icon' => 'brand.discord'];
+        $formatted = ['src_icon' => '<svg></svg>'];
+
+        $restored = SmithfieldStudio\AcfSvgIconPicker\restore_raw_icon_values($field, $raw, $formatted);
+
+        $this->assertSame(['src_icon' => 'brand.discord'], $restored);
+    }
+
     public function test_acf_field_save_and_return_svg() {
         switch_theme('test-theme');
         // create a new field group
