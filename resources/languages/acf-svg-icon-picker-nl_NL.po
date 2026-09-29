@@ -2,7 +2,7 @@
 # This file is distributed under the MIT.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced Custom Fields: SVG Icon Picker 5.0.1\n"
+"Project-Id-Version: Advanced Custom Fields: SVG Icon Picker 5.0.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/acf-svg-icon-"
 "picker\n"
 "POT-Creation-Date: 2026-09-24T15:42:26+00:00\n"

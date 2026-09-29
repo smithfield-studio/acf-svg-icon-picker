@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [5.0.2]
+
 ### Fixed
 
 - WPGraphQL: icon sub-fields in repeaters, flexible content and prefixed clone fields, including inside ACF blocks, resolve for every return format. The `icon` format returned the SVG markup as `slug` with an empty `url`, and `array` returned `null`.
