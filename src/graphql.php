@@ -70,8 +70,9 @@ add_filter('wpgraphql/acf/field_value', __NAMESPACE__ . '\\restore_raw_graphql_v
  * (see AcfGraphQLFieldType::get_resolver()). Only the FieldConfig has
  * resolve_field(), so reading the 5th resolves every field to null (#40).
  *
- * Values from a disallowed group resolve to null, as format_value() treats
- * them as a missing icon.
+ * The slug comes from format_value() as the `value` return format, so legacy
+ * values map to their slug and a value outside allowed_groups resolves to
+ * null, the same as get_field().
  *
  * @internal
  * @return array{slug: string, url: string, svg: string}|null
@@ -97,18 +98,14 @@ function resolve_graphql_field(
         $value = $value['slug'] ?? null;
     }
 
-    if (!is_string($value) || !is_valid_icon_value($value)) {
-        return null;
+    $acf_field = method_exists($field_config, 'get_acf_field') ? $field_config->get_acf_field() : null;
+    if (is_string($value) && is_array($acf_field)) {
+        $as_value = ['return_format' => 'value'] + $acf_field;
+        $value = apply_filters('acf/format_value/type=svg_icon_picker', $value, null, $as_value);
     }
 
-    // Runs the registered field's format_value() as the `value` return
-    // format, which returns '' for a value outside allowed_groups.
-    $acf_field = method_exists($field_config, 'get_acf_field') ? $field_config->get_acf_field() : null;
-    if (is_array($acf_field)) {
-        $as_value = ['return_format' => 'value'] + $acf_field;
-        if (apply_filters('acf/format_value/type=svg_icon_picker', $value, null, $as_value) === '') {
-            return null;
-        }
+    if (!is_string($value) || !is_valid_icon_value($value)) {
+        return null;
     }
 
     return [

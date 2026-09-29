@@ -1258,6 +1258,35 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
+     * A legacy value that hasn't been re-saved since update_value() started
+     * converting it still formats as its icon.
+     */
+    public function test_format_value_maps_legacy_values() {
+        switch_theme('test-theme');
+
+        $flat = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $this->assertSame('thunder-storm', $flat->format_value('thunder storm', 0, ['return_format' => 'value']));
+        $this->assertStringContainsString('<svg', (string) $flat->format_value('thunder storm', 0, [
+            'return_format' => 'icon',
+        ]));
+        $this->assertSame('thunder-storm', $flat->format_value('thunder storm', 0, [
+            'return_format' => 'array',
+        ])['slug']);
+
+        // No icon with that legacy name: formats as a missing icon.
+        $this->assertSame('', $flat->format_value('no such icon', 0, ['return_format' => 'icon']));
+        $this->assertNull($flat->format_value('no such icon', 0, ['return_format' => 'array']));
+
+        $this->add_brand_and_social_groups();
+        $grouped = new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+        $this->assertSame('thunder-storm', $grouped->format_value('thunder storm', 0, ['return_format' => 'value']));
+        $this->assertSame('', $grouped->format_value('thunder storm', 0, [
+            'return_format' => 'value',
+            'allowed_groups' => ['social'],
+        ]));
+    }
+
+    /**
      * The inline JS payload carries only what input.js reads: title and url
      * per icon, no server paths or lookup keys.
      */
@@ -1394,6 +1423,19 @@ class TestPlugin extends \WP_UnitTestCase {
         $field = ['allowed_groups' => ['brand'], 'return_format' => 'icon'];
         $this->assertNull($this->resolve_graphql('social.facebook', $field));
         $this->assertSame('brand.discord', $this->resolve_graphql('brand.discord', $field)['slug']);
+    }
+
+    public function test_graphql_resolver_maps_legacy_values() {
+        switch_theme('test-theme');
+
+        remove_all_filters('acf/format_value/type=svg_icon_picker');
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $resolved = $this->resolve_graphql('thunder storm');
+        $this->assertSame('thunder-storm', $resolved['slug']);
+        $this->assertStringEndsWith('/test-theme/icons/thunder-storm.svg', $resolved['url']);
+
+        $this->assertNull($this->resolve_graphql('no such icon'));
     }
 
     /**
