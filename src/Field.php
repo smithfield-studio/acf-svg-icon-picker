@@ -17,7 +17,7 @@ class ACF_Field_Svg_Icon_Picker extends \acf_field {
     /**
      * Plugin version. Used for asset cache-busting on registered scripts/styles.
      */
-    public const VERSION = '5.0.0';
+    public const VERSION = '5.0.1';
 
     /**
      * Controls field type visibility in REST requests.
