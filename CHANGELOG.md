@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- WPGraphQL: icon sub-fields in repeaters and flexible content resolve for every return format. The `icon` format returned the SVG markup as `slug` with an empty `url`, and `array` returned `null`.
+- WPGraphQL: a value outside the field's `allowed_groups` resolves to `null`, matching `get_field()`.
+
 ## [5.0.1]
 
 ### Fixed

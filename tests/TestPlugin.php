@@ -1324,43 +1324,154 @@ class TestPlugin extends \WP_UnitTestCase {
     }
 
     /**
-     * Mirrors AcfGraphQLFieldType::get_resolver(), which passes the field
-     * type 5th and the FieldConfig 6th (#40).
+     * Call resolve_graphql_field() the way AcfGraphQLFieldType::get_resolver()
+     * does: field type 5th, FieldConfig 6th (#40).
+     *
+     * @param array<string, mixed> $acf_field
      */
-    public function test_graphql_resolver_uses_field_config_argument() {
-        switch_theme('test-theme');
-
-        $field_type = new stdClass();
-        $field_config = new class {
-            public string $value = 'discord';
+    private function resolve_graphql(mixed $value, array $acf_field = []): ?array {
+        $field_config = new class($value, $acf_field) {
+            public function __construct(
+                private mixed $value,
+                private array $acf_field,
+            ) {}
 
             public function resolve_field($root, $args, $context, $info) {
                 return $this->value;
             }
+
+            public function get_acf_field() {
+                return $this->acf_field;
+            }
         };
 
-        $resolved = SmithfieldStudio\AcfSvgIconPicker\resolve_graphql_field(
+        return SmithfieldStudio\AcfSvgIconPicker\resolve_graphql_field(
             [],
             [],
             null,
             null,
-            $field_type,
+            new stdClass(),
             $field_config,
         );
+    }
 
+    public function test_graphql_resolver_uses_field_config_argument() {
+        switch_theme('test-theme');
+
+        $resolved = $this->resolve_graphql('discord');
         $this->assertSame('discord', $resolved['slug']);
         $this->assertStringEndsWith('/test-theme/icons/discord.svg', $resolved['url']);
         $this->assertStringContainsString('<svg', $resolved['svg']);
 
-        $field_config->value = '';
-        $this->assertNull(SmithfieldStudio\AcfSvgIconPicker\resolve_graphql_field(
-            [],
-            [],
-            null,
-            null,
-            $field_type,
-            $field_config,
-        ));
+        $this->assertNull($this->resolve_graphql(''));
+    }
+
+    /**
+     * Rows wp-graphql-acf reads with formatting on and that can't be restored
+     * (ACF blocks, clone fields) reach the resolver formatted.
+     */
+    public function test_graphql_resolver_handles_formatted_values() {
+        switch_theme('test-theme');
+
+        $array = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon_data('discord');
+        $this->assertSame('discord', $this->resolve_graphql($array)['slug']);
+
+        $markup = SmithfieldStudio\AcfSvgIconPicker\get_svg_icon('discord');
+        $this->assertNull($this->resolve_graphql($markup));
+
+        $this->assertNull($this->resolve_graphql(null));
+    }
+
+    public function test_graphql_resolver_enforces_allowed_groups() {
+        switch_theme('test-theme');
+        $this->add_brand_and_social_groups();
+
+        // The resolver checks through the registered field's format filter,
+        // so swap in an instance that sees the groups above.
+        remove_all_filters('acf/format_value/type=svg_icon_picker');
+        new SmithfieldStudio\AcfSvgIconPicker\ACF_Field_Svg_Icon_Picker();
+
+        $field = ['allowed_groups' => ['brand'], 'return_format' => 'icon'];
+        $this->assertNull($this->resolve_graphql('social.facebook', $field));
+        $this->assertSame('brand.discord', $this->resolve_graphql('brand.discord', $field)['slug']);
+    }
+
+    /**
+     * ACF drops a sub-field's saved value from a row when it formats it, so
+     * restore_raw_icon_values() puts the saved slugs back under each name.
+     */
+    public function test_restore_raw_icon_values_repeater() {
+        $icon = fn(string $name, string $format) => [
+            'key' => "field_{$name}",
+            'name' => $name,
+            'type' => 'svg_icon_picker',
+            'return_format' => $format,
+        ];
+        $field = [
+            'type' => 'repeater',
+            'sub_fields' => [
+                $icon('as_icon', 'icon'),
+                $icon('as_array', 'array'),
+                ['key' => 'field_title', 'name' => 'title', 'type' => 'text'],
+                ['key' => 'field_grp', 'name' => 'grp', 'type' => 'group', 'sub_fields' => [$icon('in_group', 'icon')]],
+            ],
+        ];
+        $raw = [
+            [
+                'field_as_icon' => 'brand.discord',
+                'field_as_array' => 'social.facebook',
+                'field_title' => 'Raw title',
+                'field_grp' => ['field_in_group' => 'brand.youtube'],
+            ],
+        ];
+        $formatted = [
+            [
+                'as_icon' => '<svg></svg>',
+                'as_array' => ['slug' => 'social.facebook'],
+                'title' => 'Formatted title',
+                'grp' => ['in_group' => '<svg></svg>'],
+            ],
+        ];
+
+        $restored = SmithfieldStudio\AcfSvgIconPicker\restore_raw_icon_values($field, $raw, $formatted);
+
+        $this->assertSame(
+            [
+                [
+                    'as_icon' => 'brand.discord',
+                    'as_array' => 'social.facebook',
+                    'title' => 'Formatted title',
+                    'grp' => ['in_group' => 'brand.youtube'],
+                ],
+            ],
+            $restored,
+        );
+    }
+
+    public function test_restore_raw_icon_values_flexible_content() {
+        $field = [
+            'type' => 'flexible_content',
+            'layouts' => [
+                'layout_card' => [
+                    'name' => 'card',
+                    'sub_fields' => [['key' => 'field_card_icon', 'name' => 'icon', 'type' => 'svg_icon_picker']],
+                ],
+            ],
+        ];
+        $raw = [
+            ['acf_fc_layout' => 'card', 'field_card_icon' => 'brand.discord'],
+            ['acf_fc_layout' => 'removed', 'field_card_icon' => 'brand.youtube'],
+        ];
+        $formatted = [
+            ['acf_fc_layout' => 'card', 'icon' => '<svg></svg>'],
+            ['acf_fc_layout' => 'removed', 'icon' => '<svg></svg>'],
+        ];
+
+        $restored = SmithfieldStudio\AcfSvgIconPicker\restore_raw_icon_values($field, $raw, $formatted);
+
+        $this->assertSame('brand.discord', $restored[0]['icon']);
+        // Rows whose layout isn't defined keep their formatted values.
+        $this->assertSame('<svg></svg>', $restored[1]['icon']);
     }
 
     public function test_acf_field_save_and_return_svg() {
