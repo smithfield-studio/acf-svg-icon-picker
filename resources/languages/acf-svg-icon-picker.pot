@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-24T15:42:55+00:00\n"
+"POT-Creation-Date: 2026-10-19T15:41:34+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: acf-svg-icon-picker\n"
@@ -39,22 +39,6 @@ msgstr ""
 msgid "https://github.com/smithfield-studio/acf-svg-icon-picker/"
 msgstr ""
 
-#: acf-svg-icon-picker.php:71
-msgid "An SVG icon picked from the configured icon set."
-msgstr ""
-
-#: acf-svg-icon-picker.php:75
-msgid "The saved slug. Bare slug in flat mode, \"groupkey.slug\" in grouped mode."
-msgstr ""
-
-#: acf-svg-icon-picker.php:82
-msgid "Public URL of the resolved SVG file."
-msgstr ""
-
-#: acf-svg-icon-picker.php:86
-msgid "Inline SVG markup for the resolved icon."
-msgstr ""
-
 #. translators: %s: the saved icon value, e.g. "nucleo.fan".
 #: resources/views/acf-field.php:26
 #, php-format
@@ -62,7 +46,7 @@ msgid "Missing icon: %s"
 msgstr ""
 
 #: resources/views/acf-field.php:30
-#: src/Field.php:489
+#: src/ACF_Field_Svg_Icon_Picker.php:496
 msgid "Choose icon"
 msgstr ""
 
@@ -80,65 +64,81 @@ msgstr ""
 msgid "Please replace or check path: %s"
 msgstr ""
 
-#: src/Field.php:59
+#: src/ACF_Field_Svg_Icon_Picker.php:59
 msgid "SVG Icon Picker"
 msgstr ""
 
-#: src/Field.php:65
+#: src/ACF_Field_Svg_Icon_Picker.php:65
 msgid "Error!"
 msgstr ""
 
-#: src/Field.php:119
+#: src/ACF_Field_Svg_Icon_Picker.php:119
 msgid "The acf_svg_icon_picker_custom_location filter should return an array with path and url, or a list of such arrays."
 msgstr ""
 
-#: src/Field.php:313
+#: src/ACF_Field_Svg_Icon_Picker.php:313
 msgid "Return Format"
 msgstr ""
 
-#: src/Field.php:319
+#: src/ACF_Field_Svg_Icon_Picker.php:319
 msgid "Value"
 msgstr ""
 
-#: src/Field.php:320
+#: src/ACF_Field_Svg_Icon_Picker.php:320
 msgid "Icon"
 msgstr ""
 
-#: src/Field.php:321
+#: src/ACF_Field_Svg_Icon_Picker.php:321
 msgid "Array"
 msgstr ""
 
-#: src/Field.php:333
+#: src/ACF_Field_Svg_Icon_Picker.php:333
 msgid "Allowed Groups"
 msgstr ""
 
-#: src/Field.php:334
+#: src/ACF_Field_Svg_Icon_Picker.php:334
 msgid "Limit the picker to these groups for this field. Leave empty to show all."
 msgstr ""
 
-#: src/Field.php:463
+#: src/ACF_Field_Svg_Icon_Picker.php:470
 msgid "No icons found. Check the paths returned by your <code>acf_svg_icon_picker_custom_location</code> filter."
 msgstr ""
 
 #. translators: %s: theme folder path (default 'icons/')
-#: src/Field.php:469
+#: src/ACF_Field_Svg_Icon_Picker.php:476
 #, php-format
 msgid "To add icons, add your SVG files in the <code>/%s</code> folder in your theme."
 msgstr ""
 
-#: src/Field.php:487
+#: src/ACF_Field_Svg_Icon_Picker.php:494
 msgid "No icons match your filter."
 msgstr ""
 
-#: src/Field.php:524
+#: src/ACF_Field_Svg_Icon_Picker.php:531
 msgid "Close"
 msgstr ""
 
-#: src/Field.php:528
+#: src/ACF_Field_Svg_Icon_Picker.php:535
 msgid "Select an icon"
 msgstr ""
 
-#: src/Field.php:530
-#: src/Field.php:536
+#: src/ACF_Field_Svg_Icon_Picker.php:537
+#: src/ACF_Field_Svg_Icon_Picker.php:543
 msgid "Start typing to filter icons"
+msgstr ""
+
+#: src/graphql.php:32
+msgid "An SVG icon picked from the configured icon set."
+msgstr ""
+
+#: src/graphql.php:36
+msgid "The saved slug. Bare slug in flat mode, \"groupkey.slug\" in grouped mode."
+msgstr ""
+
+#: src/graphql.php:43
+msgid "Public URL of the resolved SVG file."
+msgstr ""
+
+#: src/graphql.php:47
+msgid "Inline SVG markup for the resolved icon."
 msgstr ""

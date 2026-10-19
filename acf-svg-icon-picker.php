@@ -45,7 +45,7 @@ function include_field_types(): void {
         return;
     }
 
-    require_once __DIR__ . '/src/Field.php';
+    require_once __DIR__ . '/src/ACF_Field_Svg_Icon_Picker.php';
     acf_register_field_type(ACF_Field_Svg_Icon_Picker::class);
 }
 
