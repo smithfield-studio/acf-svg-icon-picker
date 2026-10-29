@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [5.0.3]
+
+### Fixed
+
+- The field class file is named after its class (`src/ACF_Field_Svg_Icon_Picker.php`), so Composer's PSR-4 autoloader no longer warns that `src/Field.php` does not comply.
+
 ## [5.0.2]
 
 ### Fixed
